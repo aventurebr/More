@@ -1,0 +1,36 @@
+# Auto detect text files and perform LF normalization
+* text=auto
+
+# JS and TS files
+*.js text
+*.ts text
+*.jsx text
+*.tsx text
+
+# CSS files
+*.css text
+*.scss text
+
+# Documentation
+*.md text
+*.txt text
+
+# Configuration files
+*.json text
+*.yaml text
+*.yml text
+*.toml text
+
+# Binary files
+*.png binary
+*.jpg binary
+*.gif binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.eot binary
+
+# Lock files
+package-lock.json binary
+bun.lockb binary
