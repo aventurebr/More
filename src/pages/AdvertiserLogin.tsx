@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
@@ -9,24 +8,47 @@ import { toast } from "sonner";
 import FadeIn from "@/components/animations/FadeIn";
 import { useGoogleLogin } from "@react-oauth/google";
 import { handleGoogleLoginSuccess, handleGoogleLoginError } from "@/lib/google-auth";
-import { useUser } from "@/contexts/UserContext";
 import { Checkbox } from "@/components/ui/checkbox";
 
-const Login = () => {
-  const { login, loginWithGoogle, isLoading: contextLoading } = useUser();
+const AdvertiserLogin = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   
   const googleLogin = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
       try {
-        await loginWithGoogle(tokenResponse, rememberMe);
-        toast.success("Login com Google realizado com sucesso!");
+        setIsLoading(true);
+        const result = await handleGoogleLoginSuccess(tokenResponse);
+        if (result.success) {
+          // Store user data based on rememberMe preference
+          const mockUser = {
+            id: "4",
+            name: "Google Advertiser",
+            email: "advertiser@gmail.com",
+            avatar: "/placeholder.svg",
+          };
+          
+          if (rememberMe) {
+            // Save to localStorage for persistent login across sessions
+            localStorage.setItem("advertiser", JSON.stringify(mockUser));
+          } else {
+            // Save to sessionStorage for current session only
+            sessionStorage.setItem("advertiser", JSON.stringify(mockUser));
+          }
+          
+          toast.success("Login com Google realizado com sucesso!");
+          navigate("/dashboard"); // Redirect to advertiser dashboard
+        } else {
+          toast.error("Falha ao fazer login com Google. Tente novamente.");
+        }
       } catch (error) {
         toast.error("Ocorreu um erro durante o login com Google.");
+      } finally {
+        setIsLoading(false);
       }
     },
     onError: () => {
@@ -43,10 +65,33 @@ const Login = () => {
       return;
     }
     
+    setIsLoading(true);
+
     try {
-      await login(email, password, rememberMe);
-      toast.success("Login realizado com sucesso!");
+      // Simulate login process
+      setTimeout(() => {
+        // Store user data based on rememberMe preference
+        const mockUser = {
+          id: "3",
+          name: email.split("@")[0],
+          email,
+          avatar: "/placeholder.svg",
+        };
+        
+        if (rememberMe) {
+          // Save to localStorage for persistent login across sessions
+          localStorage.setItem("advertiser", JSON.stringify(mockUser));
+        } else {
+          // Save to sessionStorage for current session only
+          sessionStorage.setItem("advertiser", JSON.stringify(mockUser));
+        }
+        
+        toast.success("Login realizado com sucesso!");
+        navigate("/dashboard"); // Redirect to advertiser dashboard
+        setIsLoading(false);
+      }, 1500);
     } catch (error) {
+      setIsLoading(false);
       toast.error("Falha ao fazer login. Tente novamente.");
     }
   };
@@ -68,9 +113,9 @@ const Login = () => {
       <FadeIn>
         <Card className="w-full max-w-md shadow-sm border-[#e1e1e1] bg-white rounded-xl">
           <CardHeader className="space-y-1 text-center">
-            <CardTitle className="text-2xl font-medium">Entrar no More</CardTitle>
+            <CardTitle className="text-2xl font-medium">Área do Anunciante</CardTitle>
             <CardDescription>
-              Entre com seu e-mail e senha para acessar sua conta
+              Entre com seu e-mail e senha para gerenciar seus anúncios
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -115,38 +160,34 @@ const Login = () => {
                       ) : (
                         <Eye className="h-5 w-5" />
                       )}
+                      <span className="sr-only">
+                        {showPassword ? "Ocultar senha" : "Mostrar senha"}
+                      </span>
                     </button>
                   </div>
                 </div>
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center space-x-2">
-                    <Checkbox 
-                      id="remember" 
-                      checked={rememberMe}
-                      onCheckedChange={(checked) => setRememberMe(checked as boolean)}
-                    />
-                    <label
-                      htmlFor="remember"
-                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                    >
-                      Lembrar-me
-                    </label>
-                  </div>
-                  <Link
-                    to="/reset-password"
-                    className="text-sm text-blue-500 hover:underline"
-                  >
-                    Esqueceu a senha?
-                  </Link>
-                </div>
               </div>
-              
+
+              <div className="flex items-center space-x-2 mb-4">
+                <Checkbox
+                  id="remember"
+                  checked={rememberMe}
+                  onCheckedChange={(checked) => setRememberMe(checked as boolean)}
+                />
+                <label
+                  htmlFor="remember"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  Lembrar-me
+                </label>
+              </div>
+
               <Button
                 type="submit"
                 className="w-full bg-slate-700 hover:bg-slate-800 rounded-xl"
-                disabled={contextLoading}
+                disabled={isLoading}
               >
-                {contextLoading ? "Entrando..." : "Entrar"}
+                {isLoading ? "Entrando..." : "Entrar"}
               </Button>
               
               <div className="relative my-4">
@@ -163,7 +204,7 @@ const Login = () => {
                 variant="outline"
                 className="w-full flex items-center justify-center gap-2 border-gray-300 rounded-xl"
                 onClick={() => googleLogin()}
-                disabled={contextLoading}
+                disabled={isLoading}
               >
                 <svg width="18" height="18" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
                   <path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"/>
@@ -173,12 +214,15 @@ const Login = () => {
                 </svg>
                 Entrar com Google
               </Button>
-              
-              <div className="text-center mt-4">
-                <p className="text-sm text-muted-foreground">
+
+              <div className="text-center text-sm">
+                <p className="text-muted-foreground">
                   Não tem uma conta?{" "}
-                  <Link to="/register" className="text-blue-500 hover:underline">
-                    Cadastre-se
+                  <Link
+                    to="/advertiser/register"
+                    className="text-blue-600 hover:text-blue-500 font-medium"
+                  >
+                    Cadastre-se como anunciante
                   </Link>
                 </p>
               </div>
@@ -190,4 +234,4 @@ const Login = () => {
   );
 };
 
-export default Login;
+export default AdvertiserLogin;

@@ -1,17 +1,17 @@
-
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Mail, Lock, User, Eye, EyeOff, ChevronLeft } from "lucide-react";
+import { Mail, Lock, User, Phone, Eye, EyeOff, ChevronLeft } from "lucide-react";
 import { toast } from "sonner";
 import FadeIn from "@/components/animations/FadeIn";
 import { Checkbox } from "@/components/ui/checkbox";
 
-const Register = () => {
+const AdvertiserRegister = () => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -22,7 +22,7 @@ const Register = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!name || !email || !password || !confirmPassword) {
+    if (!name || !email || !phone || !password || !confirmPassword) {
       toast.error("Por favor, preencha todos os campos");
       return;
     }
@@ -31,7 +31,7 @@ const Register = () => {
       toast.error("As senhas não coincidem");
       return;
     }
-    
+
     if (!acceptTerms) {
       toast.error("Você precisa aceitar os termos de uso");
       return;
@@ -39,12 +39,11 @@ const Register = () => {
     
     setIsLoading(true);
 
-    // Simulate registration process
     try {
-      // In a real app, this would be your auth call
+      // Simulate registration process
       setTimeout(() => {
         toast.success("Cadastro realizado com sucesso!");
-        navigate("/login");
+        navigate("/advertiser/login");
         setIsLoading(false);
       }, 1500);
     } catch (error) {
@@ -70,9 +69,9 @@ const Register = () => {
       <FadeIn>
         <Card className="w-full max-w-md shadow-sm border-[#e1e1e1] bg-white rounded-xl my-8">
           <CardHeader className="space-y-1 text-center">
-            <CardTitle className="text-2xl font-medium">Crie sua conta</CardTitle>
+            <CardTitle className="text-2xl font-medium">Cadastro de Anunciante</CardTitle>
             <CardDescription>
-              Cadastre-se para encontrar o quarto perfeito em Campinas
+              Crie sua conta para começar a anunciar seus quartos
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -108,6 +107,22 @@ const Register = () => {
                   />
                 </div>
               </div>
+
+              <div className="space-y-2">
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+                    <Phone className="h-5 w-5 text-gray-400" />
+                  </div>
+                  <Input
+                    type="tel"
+                    placeholder="Seu telefone"
+                    className="pl-10"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
               
               <div className="space-y-2">
                 <div className="relative">
@@ -116,7 +131,7 @@ const Register = () => {
                   </div>
                   <Input
                     type={showPassword ? "text" : "password"}
-                    placeholder="Crie uma senha"
+                    placeholder="Sua senha"
                     className="pl-10 pr-10"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
@@ -133,11 +148,14 @@ const Register = () => {
                       ) : (
                         <Eye className="h-5 w-5" />
                       )}
+                      <span className="sr-only">
+                        {showPassword ? "Ocultar senha" : "Mostrar senha"}
+                      </span>
                     </button>
                   </div>
                 </div>
               </div>
-              
+
               <div className="space-y-2">
                 <div className="relative">
                   <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
@@ -153,7 +171,7 @@ const Register = () => {
                   />
                 </div>
               </div>
-              
+
               <div className="flex items-center space-x-2">
                 <Checkbox
                   id="terms"
@@ -180,7 +198,7 @@ const Register = () => {
                   </Link>
                 </label>
               </div>
-              
+
               <Button
                 type="submit"
                 className="w-full bg-slate-700 hover:bg-slate-800 rounded-xl"
@@ -188,12 +206,15 @@ const Register = () => {
               >
                 {isLoading ? "Criando conta..." : "Criar conta"}
               </Button>
-              
-              <div className="text-center mt-4">
-                <p className="text-sm text-muted-foreground">
+
+              <div className="text-center text-sm">
+                <p className="text-muted-foreground">
                   Já tem uma conta?{" "}
-                  <Link to="/login" className="text-blue-500 hover:underline">
-                    Entrar
+                  <Link
+                    to="/advertiser/login"
+                    className="text-blue-600 hover:text-blue-500 font-medium"
+                  >
+                    Faça login
                   </Link>
                 </p>
               </div>
@@ -205,4 +226,4 @@ const Register = () => {
   );
 };
 
-export default Register;
+export default AdvertiserRegister;

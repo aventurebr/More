@@ -7,18 +7,29 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search, FilterX } from "lucide-react";
 import RoomCard from "@/components/ui/RoomCard";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import FadeIn from "@/components/animations/FadeIn";
 
 const Rooms = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [rooms, setRooms] = useState<RoomData[]>(mockRoomData);
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, setSearchTerm] = useState(searchParams.get("search") || "");
   const [activeFilters, setActiveFilters] = useState<{
     priceMin?: number;
     priceMax?: number;
     location?: string;
     features?: string[];
   }>({});
+
+  // Update URL when search term changes
+  useEffect(() => {
+    if (searchTerm) {
+      searchParams.set("search", searchTerm);
+    } else {
+      searchParams.delete("search");
+    }
+    setSearchParams(searchParams);
+  }, [searchTerm]);
 
   // Filter rooms based on search term and active filters
   useEffect(() => {
@@ -27,12 +38,18 @@ const Rooms = () => {
     // Apply search filter
     if (searchTerm) {
       const searchLower = searchTerm.toLowerCase();
-      filteredRooms = filteredRooms.filter(
-        room => 
-          room.title.toLowerCase().includes(searchLower) || 
-          room.location.toLowerCase().includes(searchLower) ||
-          room.tags.some(tag => tag.toLowerCase().includes(searchLower))
-      );
+      const searchTerms = searchLower.split(/\s+/).filter(term => term.length > 0);
+      
+      filteredRooms = filteredRooms.filter(room => {
+        const roomText = [
+          room.title.toLowerCase(),
+          room.location.toLowerCase(),
+          ...room.tags.map(tag => tag.toLowerCase()),
+          room.description.toLowerCase()
+        ].join(" ");
+        
+        return searchTerms.every(term => roomText.includes(term));
+      });
     }
 
     // Apply price filters

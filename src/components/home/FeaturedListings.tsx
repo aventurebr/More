@@ -27,9 +27,9 @@ const FeaturedListings = () => {
             </FadeIn>
           </div>
           <FadeIn delay={200}>
-            <Button variant="ghost" className="mt-4 md:mt-0 text-blue-500 font-medium group">
+            <Link to="/quartos" className="mt-4 md:mt-0 text-blue-500 font-medium group inline-flex items-center">
               Ver todos os quartos <ArrowRight className="h-4 w-4 ml-1 transition-transform group-hover:translate-x-1" />
-            </Button>
+            </Link>
           </FadeIn>
         </div>
         

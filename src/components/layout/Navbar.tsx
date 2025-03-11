@@ -3,11 +3,12 @@ import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Menu, Search } from "lucide-react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 
 const Navbar = () => {
   const [scrolled, setScrolled] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
   
   useEffect(() => {
     const handleScroll = () => {
@@ -28,18 +29,34 @@ const Navbar = () => {
 
   const scrollToAbout = (e: React.MouseEvent) => {
     e.preventDefault();
-    const aboutSection = document.getElementById('about');
-    if (aboutSection) {
-      aboutSection.scrollIntoView({ behavior: 'smooth' });
+    if (location.pathname !== '/') {
+      navigate('/', { state: { scrollTo: 'about' } });
+    } else {
+      const aboutSection = document.getElementById('about');
+      if (aboutSection) {
+        aboutSection.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+  };
+
+  const scrollToContact = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (location.pathname !== '/') {
+      navigate('/', { state: { scrollTo: 'contact' } });
+    } else {
+      const contactSection = document.getElementById('contact');
+      if (contactSection) {
+        contactSection.scrollIntoView({ behavior: 'smooth' });
+      }
     }
   };
   
   return (
-    <header className={`fixed top-0 left-0 right-0 z-50 px-4 md:px-6 transition-all duration-300 ${scrolled ? "py-3 bg-white/90 backdrop-blur-md shadow-sm" : "py-3 bg-[#e9ebec]"}`}>
+    <header className={`fixed top-0 left-0 right-0 z-50 px-4 md:px-6 transition-all duration-300 ${scrolled ? "py-3 bg-white/90 backdrop-blur-md shadow-sm" : "py-3 bg-white/80 backdrop-blur-sm"}`}>
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         <div className="flex items-center">
           <Link to="/">
-            <Button variant="ghost" className="text-blue-500 font-medium p-0 mr-6">
+            <Button variant="ghost" className="text-blue-500 font-medium text-2xl p-3 mr-6">
               More
             </Button>
           </Link>
@@ -49,26 +66,29 @@ const Navbar = () => {
           <Link to="/quartos">
             <Button 
               variant="ghost" 
-              className={`font-medium ${isActive('/quartos') ? 'bg-muted text-foreground' : ''}`}
+              className={`font-medium transition-colors ${isActive('/quartos') ? 'bg-slate-100 text-slate-900' : 'hover:bg-slate-100/50 hover:text-slate-900'}`}
             >
               Quartos
             </Button>
           </Link>
-          <Button variant="ghost" className="font-medium" onClick={scrollToAbout}>
+          <Button 
+            variant="ghost" 
+            className="font-medium transition-colors hover:bg-slate-100/50 hover:text-slate-900" 
+            onClick={scrollToAbout}
+          >
             Sobre
           </Button>
-          <Link to="/contato">
-            <Button 
-              variant="ghost" 
-              className={`font-medium ${isActive('/contato') ? 'bg-muted text-foreground' : ''}`}
-            >
-              Contato
-            </Button>
-          </Link>
+          <Button 
+            variant="ghost" 
+            className="font-medium transition-colors hover:bg-slate-100/50 hover:text-slate-900" 
+            onClick={scrollToContact}
+          >
+            Contato
+          </Button>
         </nav>
 
         <div className="flex items-center space-x-2">
-          <Button variant="ghost" size="icon" className="rounded-full">
+          <Button variant="ghost" size="icon" className="rounded-full hover:bg-slate-100/50">
             <Search className="h-5 w-5" />
           </Button>
           
@@ -93,16 +113,12 @@ const Navbar = () => {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-[160px]">
                 <Link to="/quartos">
-                  <DropdownMenuItem className={isActive('/quartos') ? 'bg-muted' : ''}>
+                  <DropdownMenuItem className={isActive('/quartos') ? 'bg-slate-100 text-slate-900' : ''}>
                     Quartos
                   </DropdownMenuItem>
                 </Link>
                 <DropdownMenuItem onClick={scrollToAbout}>Sobre</DropdownMenuItem>
-                <Link to="/contato">
-                  <DropdownMenuItem className={isActive('/contato') ? 'bg-muted' : ''}>
-                    Contato
-                  </DropdownMenuItem>
-                </Link>
+                <DropdownMenuItem onClick={scrollToContact}>Contato</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>

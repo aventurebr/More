@@ -191,7 +191,7 @@ export const mockRoomData: RoomData[] = [
     locationDetails: "Localizado no centro de Campinas, a 50 metros da Avenida Francisco Glicério. Próximo de shoppings, supermercados, restaurantes e transporte público.",
     availableFrom: "01/07/2023",
     host: {
-      name: "Ana Carvalho",
+      name: "Rafael Carvalho",
       imageUrl: "https://images.unsplash.com/photo-1599566150163-29194dcaad36?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1180&q=80",
       rating: 4.7,
       reviewCount: 35
