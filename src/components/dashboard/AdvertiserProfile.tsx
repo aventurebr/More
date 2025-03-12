@@ -51,6 +51,7 @@ const AdvertiserProfile = ({ initialData }: AdvertiserProfileProps) => {
         .upload(`advertiser-avatars/${initialData?.email}/${filename}`, file);
       
       if (error) {
+        console.error("Upload error:", error);
         throw error;
       }
       
@@ -69,8 +70,8 @@ const AdvertiserProfile = ({ initialData }: AdvertiserProfileProps) => {
       
       toast.success("Foto atualizada com sucesso!");
     } catch (error: any) {
-      toast.error("Erro ao atualizar a foto. Tente novamente.");
-      console.error("Upload error:", error);
+      console.error("Upload error details:", error);
+      toast.error(`Erro ao atualizar a foto: ${error.message || "Tente novamente."}`);
     } finally {
       setIsUploading(false);
     }
