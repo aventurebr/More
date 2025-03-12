@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -7,6 +8,8 @@ import { Mail, Lock, User, Phone, Eye, EyeOff, ChevronLeft } from "lucide-react"
 import { toast } from "sonner";
 import FadeIn from "@/components/animations/FadeIn";
 import { Checkbox } from "@/components/ui/checkbox";
+import { supabase } from "@/integrations/supabase/client";
+import { useAdvertiser } from "@/contexts/AdvertiserContext";
 
 const AdvertiserRegister = () => {
   const [name, setName] = useState("");
@@ -18,6 +21,14 @@ const AdvertiserRegister = () => {
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const { advertiser } = useAdvertiser();
+  
+  // Redirect if already logged in
+  useEffect(() => {
+    if (advertiser) {
+      navigate("/dashboard");
+    }
+  }, [advertiser, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,15 +51,34 @@ const AdvertiserRegister = () => {
     setIsLoading(true);
 
     try {
-      // Simulate registration process
-      setTimeout(() => {
-        toast.success("Cadastro realizado com sucesso!");
-        navigate("/advertiser/login");
-        setIsLoading(false);
-      }, 1500);
-    } catch (error) {
+      // Register the user with Supabase
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            name,
+            phone
+          },
+        },
+      });
+      
+      if (error) {
+        throw error;
+      }
+      
+      toast.success("Cadastro realizado com sucesso! Verifique seu email para confirmar a conta.");
+      navigate("/advertiser/login");
+    } catch (error: any) {
+      console.error("Registration error:", error);
+      
+      if (error.message.includes("Email already registered")) {
+        toast.error("Este e-mail já está cadastrado. Tente fazer login ou use outro e-mail.");
+      } else {
+        toast.error("Falha ao criar conta. Tente novamente.");
+      }
+    } finally {
       setIsLoading(false);
-      toast.error("Falha ao criar conta. Tente novamente.");
     }
   };
 

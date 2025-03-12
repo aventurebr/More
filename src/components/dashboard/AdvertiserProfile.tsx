@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,12 +7,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Camera, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useAdvertiser } from "@/contexts/AdvertiserContext";
+import { supabase } from "@/integrations/supabase/client";
 
 interface AdvertiserProfileProps {
   initialData?: {
     name: string;
     email: string;
-    avatar?: string;
+    phone?: string;
+    avatar_url?: string;
   };
 }
 
@@ -22,7 +25,8 @@ const AdvertiserProfile = ({ initialData }: AdvertiserProfileProps) => {
   const [userData, setUserData] = useState({
     name: initialData?.name || "Anunciante",
     email: initialData?.email || "anunciante@example.com",
-    avatar: initialData?.avatar || "/placeholder.svg",
+    phone: initialData?.phone || "",
+    avatar_url: initialData?.avatar_url || "/placeholder.svg",
   });
 
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -41,44 +45,30 @@ const AdvertiserProfile = ({ initialData }: AdvertiserProfileProps) => {
       const extension = file.name.split('.').pop();
       const filename = `${timestamp}.${extension}`;
       
-      // In a real-world scenario, we would upload the file to a server or cloud storage
-      // For this implementation, we'll simulate saving to the public folder
-      // by creating a URL that points to where the file would be stored
+      // Upload file to Supabase Storage
+      const { data, error } = await supabase.storage
+        .from('avatars')
+        .upload(`advertiser-avatars/${initialData?.email}/${filename}`, file);
       
-      // The path where the image would be stored on the server
-      const serverPath = `/lovable-uploads/${filename}`;
+      if (error) {
+        throw error;
+      }
       
-      // Simulate upload delay
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      // Get public URL for the uploaded file
+      const { data: publicUrlData } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(`advertiser-avatars/${initialData?.email}/${filename}`);
       
-      // In a real implementation with a backend:
-      // 1. Create a FormData object
-      // const formData = new FormData();
-      // formData.append('file', file, filename);
-      // 2. Send to server
-      // const response = await fetch('/api/upload', { method: 'POST', body: formData });
-      // 3. Get the URL from the response
-      // const { imageUrl } = await response.json();
+      const avatar_url = publicUrlData.publicUrl;
       
-      // For now, we'll use URL.createObjectURL for preview purposes only
-      // This creates a temporary URL that will be lost when the page refreshes
-      const tempPreviewUrl = URL.createObjectURL(file);
+      // Update local state with the new avatar URL
+      setUserData({ ...userData, avatar_url });
       
-      // In a real implementation, we would use the server path
-      // For this demo, we'll store both - the temp URL for immediate display
-      // and the server path that would be used in a real implementation
-      
-      // Update local state with the temporary URL for immediate display
-      setUserData({ ...userData, avatar: tempPreviewUrl });
-      
-      // Update advertiser profile in context and storage with the server path
-      // This is what would be persisted in a real implementation
-      updateAdvertiserProfile({ 
-        avatar: serverPath 
-      });
+      // Update advertiser profile in database
+      await updateAdvertiserProfile({ avatar_url });
       
       toast.success("Foto atualizada com sucesso!");
-    } catch (error) {
+    } catch (error: any) {
       toast.error("Erro ao atualizar a foto. Tente novamente.");
       console.error("Upload error:", error);
     } finally {
@@ -89,10 +79,10 @@ const AdvertiserProfile = ({ initialData }: AdvertiserProfileProps) => {
   const handleSave = async () => {
     setIsEditing(false);
     try {
-      // Update advertiser profile in context and storage
-      updateAdvertiserProfile({
+      // Update advertiser profile in database
+      await updateAdvertiserProfile({
         name: userData.name,
-        email: userData.email
+        phone: userData.phone
       });
       
       toast.success("Perfil atualizado com sucesso!");
@@ -111,7 +101,7 @@ const AdvertiserProfile = ({ initialData }: AdvertiserProfileProps) => {
           <div className="flex items-center gap-6">
             <div className="relative">
               <Avatar className="h-24 w-24">
-                <AvatarImage src={userData.avatar} alt="Foto do perfil" />
+                <AvatarImage src={userData.avatar_url} alt="Foto do perfil" />
                 <AvatarFallback>{userData.name[0]}</AvatarFallback>
               </Avatar>
               <label
@@ -136,6 +126,9 @@ const AdvertiserProfile = ({ initialData }: AdvertiserProfileProps) => {
             <div className="text-left">
               <h3 className="text-lg font-medium">{userData.name}</h3>
               <p className="text-sm text-muted-foreground">{userData.email}</p>
+              {userData.phone && (
+                <p className="text-sm text-muted-foreground">{userData.phone}</p>
+              )}
             </div>
           </div>
           <p className="text-sm text-muted-foreground">
@@ -155,9 +148,17 @@ const AdvertiserProfile = ({ initialData }: AdvertiserProfileProps) => {
           <div className="space-y-2">
             <Input
               value={userData.email}
-              onChange={(e) => setUserData({ ...userData, email: e.target.value })}
               placeholder="Seu e-mail"
               type="email"
+              disabled={true} // Email can't be changed
+            />
+          </div>
+          <div className="space-y-2">
+            <Input
+              value={userData.phone || ""}
+              onChange={(e) => setUserData({ ...userData, phone: e.target.value })}
+              placeholder="Seu telefone"
+              type="tel"
               disabled={!isEditing}
             />
           </div>

@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -9,6 +10,8 @@ import FadeIn from "@/components/animations/FadeIn";
 import { useGoogleLogin } from "@react-oauth/google";
 import { handleGoogleLoginSuccess, handleGoogleLoginError } from "@/lib/google-auth";
 import { Checkbox } from "@/components/ui/checkbox";
+import { supabase } from "@/integrations/supabase/client";
+import { useAdvertiser } from "@/contexts/AdvertiserContext";
 
 const AdvertiserLogin = () => {
   const [email, setEmail] = useState("");
@@ -17,6 +20,14 @@ const AdvertiserLogin = () => {
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const { advertiser } = useAdvertiser();
+  
+  // Redirect if already logged in
+  useEffect(() => {
+    if (advertiser) {
+      navigate("/dashboard");
+    }
+  }, [advertiser, navigate]);
   
   const googleLogin = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
@@ -24,24 +35,8 @@ const AdvertiserLogin = () => {
         setIsLoading(true);
         const result = await handleGoogleLoginSuccess(tokenResponse);
         if (result.success) {
-          // Store user data based on rememberMe preference
-          const mockUser = {
-            id: "4",
-            name: "Google Advertiser",
-            email: "advertiser@gmail.com",
-            avatar: "/placeholder.svg",
-          };
-          
-          if (rememberMe) {
-            // Save to localStorage for persistent login across sessions
-            localStorage.setItem("advertiser", JSON.stringify(mockUser));
-          } else {
-            // Save to sessionStorage for current session only
-            sessionStorage.setItem("advertiser", JSON.stringify(mockUser));
-          }
-          
           toast.success("Login com Google realizado com sucesso!");
-          navigate("/dashboard"); // Redirect to advertiser dashboard
+          navigate("/dashboard");
         } else {
           toast.error("Falha ao fazer login com Google. Tente novamente.");
         }
@@ -68,31 +63,27 @@ const AdvertiserLogin = () => {
     setIsLoading(true);
 
     try {
-      // Simulate login process
-      setTimeout(() => {
-        // Store user data based on rememberMe preference
-        const mockUser = {
-          id: "3",
-          name: email.split("@")[0],
-          email,
-          avatar: "/placeholder.svg",
-        };
-        
-        if (rememberMe) {
-          // Save to localStorage for persistent login across sessions
-          localStorage.setItem("advertiser", JSON.stringify(mockUser));
-        } else {
-          // Save to sessionStorage for current session only
-          sessionStorage.setItem("advertiser", JSON.stringify(mockUser));
-        }
-        
-        toast.success("Login realizado com sucesso!");
-        navigate("/dashboard"); // Redirect to advertiser dashboard
-        setIsLoading(false);
-      }, 1500);
-    } catch (error) {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      
+      if (error) {
+        throw error;
+      }
+      
+      toast.success("Login realizado com sucesso!");
+      navigate("/dashboard");
+    } catch (error: any) {
+      console.error("Login error:", error);
+      
+      if (error.message.includes("Invalid login credentials")) {
+        toast.error("Email ou senha incorretos. Tente novamente.");
+      } else {
+        toast.error("Falha ao fazer login. Tente novamente.");
+      }
+    } finally {
       setIsLoading(false);
-      toast.error("Falha ao fazer login. Tente novamente.");
     }
   };
 

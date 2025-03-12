@@ -1,4 +1,6 @@
+
 // Google OAuth configuration
+import { supabase } from "@/integrations/supabase/client";
 
 // This is the client ID from Google OAuth
 // Using the environment variable set in .env file
@@ -21,13 +23,20 @@ export const handleGoogleLoginSuccess = async (response: any) => {
     // Get the ID token from the response
     const { credential } = response;
     
-    // In a real application, you would send this token to your backend
-    // to verify and create a session
-    console.log("Google login successful", credential);
+    // Sign in with Google using Supabase
+    const { data, error } = await supabase.auth.signInWithIdToken({
+      provider: 'google',
+      token: credential,
+    });
+    
+    if (error) throw error;
+    
+    console.log("Google login successful", data);
     
     return {
       success: true,
-      credential,
+      user: data.user,
+      session: data.session,
     };
   } catch (error) {
     console.error("Google login error:", error);

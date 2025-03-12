@@ -1,11 +1,15 @@
+
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface Advertiser {
   id?: string;
   name: string;
   email: string;
-  avatar?: string;
+  phone?: string;
+  avatar_url?: string;
 }
 
 interface AdvertiserContextType {
@@ -20,47 +24,98 @@ const AdvertiserContext = createContext<AdvertiserContextType | undefined>(undef
 
 export function AdvertiserProvider({ children }: { children: React.ReactNode }) {
   const [advertiser, setAdvertiser] = useState<Advertiser | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Check for saved advertiser data in localStorage first (persistent login)
-    const savedAdvertiser = localStorage.getItem("advertiser");
-    if (savedAdvertiser) {
-      setAdvertiser(JSON.parse(savedAdvertiser));
-      return;
-    }
-    
-    // If not in localStorage, check sessionStorage (session-only login)
-    const sessionAdvertiser = sessionStorage.getItem("advertiser");
-    if (sessionAdvertiser) {
-      setAdvertiser(JSON.parse(sessionAdvertiser));
-    }
+    // Check for current Supabase session
+    const fetchAdvertiser = async () => {
+      try {
+        const { data } = await supabase.auth.getSession();
+        
+        if (data.session) {
+          // Get advertiser profile from database
+          const { data: advertiserData, error } = await supabase
+            .from('advertisers')
+            .select('*')
+            .eq('id', data.session.user.id)
+            .single();
+          
+          if (error) {
+            console.error("Error fetching advertiser profile:", error);
+            setIsLoading(false);
+            return;
+          }
+          
+          setAdvertiser(advertiserData);
+        }
+      } catch (error) {
+        console.error("Error checking auth session:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchAdvertiser();
+
+    // Subscribe to auth changes
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (event === 'SIGNED_IN' && session) {
+          // Get advertiser profile when signed in
+          const { data, error } = await supabase
+            .from('advertisers')
+            .select('*')
+            .eq('id', session.user.id)
+            .single();
+          
+          if (!error && data) {
+            setAdvertiser(data);
+          }
+        } else if (event === 'SIGNED_OUT') {
+          setAdvertiser(null);
+        }
+      }
+    );
+
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
   }, []);
 
   // Update advertiser profile data and persist changes
-  const updateAdvertiserProfile = (data: Partial<Advertiser>) => {
-    if (!advertiser) return;
+  const updateAdvertiserProfile = async (data: Partial<Advertiser>) => {
+    if (!advertiser || !advertiser.id) return;
 
-    const updatedAdvertiser = { ...advertiser, ...data };
-    
-    // Update state
-    setAdvertiser(updatedAdvertiser);
-    
-    // Persist to storage
-    // Check if the user was stored in localStorage (persistent) or sessionStorage
-    if (localStorage.getItem("advertiser")) {
-      localStorage.setItem("advertiser", JSON.stringify(updatedAdvertiser));
-    } else if (sessionStorage.getItem("advertiser")) {
-      sessionStorage.setItem("advertiser", JSON.stringify(updatedAdvertiser));
+    try {
+      const { error } = await supabase
+        .from('advertisers')
+        .update(data)
+        .eq('id', advertiser.id);
+      
+      if (error) {
+        throw error;
+      }
+      
+      // Update state with new data
+      setAdvertiser((prev) => prev ? { ...prev, ...data } : null);
+      toast.success("Perfil atualizado com sucesso!");
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      toast.error("Erro ao atualizar perfil. Tente novamente.");
     }
   };
 
-  const logout = () => {
-    localStorage.removeItem("advertiser");
-    sessionStorage.removeItem("advertiser");
-    setAdvertiser(null);
-    navigate("/");
+  const logout = async () => {
+    try {
+      await supabase.auth.signOut();
+      setAdvertiser(null);
+      navigate("/");
+      toast.success("Logout realizado com sucesso!");
+    } catch (error) {
+      console.error("Error signing out:", error);
+      toast.error("Erro ao fazer logout. Tente novamente.");
+    }
   };
 
   return (
