@@ -38,6 +38,20 @@ const Settings = () => {
     if (data.session) {
       toast.success("Usuário autenticado!");
       console.log("Auth session:", data.session);
+      
+      // Refresh profile data from database
+      const { data: advertiserData, error: advertiserError } = await supabase
+        .from('advertisers')
+        .select('*')
+        .eq('id', data.session.user.id)
+        .single();
+      
+      if (advertiserError) {
+        console.error("Error fetching refreshed advertiser data:", advertiserError);
+      } else {
+        console.log("Refreshed advertiser data:", advertiserData);
+      }
+      
     } else {
       toast.error("Usuário não autenticado!");
       navigate("/advertiser/login");

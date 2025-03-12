@@ -114,8 +114,13 @@ export function AdvertiserProvider({ children }: { children: React.ReactNode }) 
       }
       
       // Update state with new data
-      setAdvertiser((prev) => prev ? { ...prev, ...data } : null);
-      toast.success("Perfil atualizado com sucesso!");
+      setAdvertiser((prev) => {
+        if (!prev) return null;
+        const updated = { ...prev, ...data };
+        console.log("Updated advertiser state:", updated);
+        return updated;
+      });
+      
     } catch (error) {
       console.error("Error updating profile:", error);
       toast.error("Erro ao atualizar perfil. Tente novamente.");

@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
@@ -37,6 +37,13 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { logout, advertiser } = useAdvertiser();
+  const [avatarKey, setAvatarKey] = useState(Date.now());
+
+  // Force avatar re-render when advertiser data changes
+  useEffect(() => {
+    setAvatarKey(Date.now());
+    console.log("Avatar should update with URL:", advertiser?.avatar_url);
+  }, [advertiser?.avatar_url]);
 
   const handleLogout = () => {
     logout();
@@ -82,7 +89,12 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         </Sheet>
 
         <div className="flex items-center space-x-2">
-          <UserMenu onLogout={handleLogout} avatar={advertiser?.avatar_url} name={advertiser?.name} />
+          <UserMenu 
+            key={`mobile-avatar-${avatarKey}`} 
+            onLogout={handleLogout} 
+            avatar={advertiser?.avatar_url} 
+            name={advertiser?.name} 
+          />
         </div>
       </div>
 
@@ -97,7 +109,12 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
               <NavContent />
             </div>
             <div className="p-4 border-t">
-              <UserMenu onLogout={handleLogout} avatar={advertiser?.avatar_url} name={advertiser?.name} />
+              <UserMenu 
+                key={`desktop-avatar-${avatarKey}`}
+                onLogout={handleLogout} 
+                avatar={advertiser?.avatar_url} 
+                name={advertiser?.name} 
+              />
             </div>
           </div>
         </div>
@@ -118,12 +135,21 @@ interface UserMenuProps {
 }
 
 const UserMenu = ({ onLogout, avatar, name }: UserMenuProps) => {
+  console.log("UserMenu rendering with avatar:", avatar);
+  
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-10 w-10 rounded-full">
           <Avatar className="h-10 w-10">
-            <AvatarImage src={avatar || "/placeholder.svg"} alt={`${name || 'User'} avatar`} />
+            <AvatarImage 
+              src={avatar || "/placeholder.svg"} 
+              alt={`${name || 'User'} avatar`} 
+              onError={(e) => {
+                console.error("Error loading avatar in menu:", avatar);
+                (e.target as HTMLImageElement).src = "/placeholder.svg";
+              }}
+            />
             <AvatarFallback>{name ? name[0].toUpperCase() : 'U'}</AvatarFallback>
           </Avatar>
         </Button>

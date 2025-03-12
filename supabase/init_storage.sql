@@ -15,6 +15,17 @@ WITH CHECK (
   (storage.foldername(name))[2] = (SELECT email FROM auth.users WHERE id = auth.uid())
 );
 
+-- Set up policy to allow authenticated users to update files in their folder
+CREATE POLICY "Users can update avatars in their own folder"
+ON storage.objects
+FOR UPDATE
+TO authenticated
+USING (
+  bucket_id = 'avatars' AND 
+  (storage.foldername(name))[1] = 'advertiser-avatars' AND
+  (storage.foldername(name))[2] = (SELECT email FROM auth.users WHERE id = auth.uid())
+);
+
 -- Set up policy to allow public read access to the avatars bucket
 CREATE POLICY "Public read access for avatars"
 ON storage.objects

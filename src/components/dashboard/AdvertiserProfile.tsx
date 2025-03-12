@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -19,7 +19,7 @@ interface AdvertiserProfileProps {
 }
 
 const AdvertiserProfile = ({ initialData }: AdvertiserProfileProps) => {
-  const { updateAdvertiserProfile } = useAdvertiser();
+  const { updateAdvertiserProfile, advertiser } = useAdvertiser();
   const [isEditing, setIsEditing] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadStatus, setUploadStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
@@ -29,6 +29,18 @@ const AdvertiserProfile = ({ initialData }: AdvertiserProfileProps) => {
     phone: initialData?.phone || "",
     avatar_url: initialData?.avatar_url || "/placeholder.svg",
   });
+
+  // Update local state when advertiser data changes from context
+  useEffect(() => {
+    if (advertiser) {
+      setUserData({
+        name: advertiser.name || userData.name,
+        email: advertiser.email || userData.email,
+        phone: advertiser.phone || userData.phone,
+        avatar_url: advertiser.avatar_url || userData.avatar_url,
+      });
+    }
+  }, [advertiser]);
 
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -74,7 +86,7 @@ const AdvertiserProfile = ({ initialData }: AdvertiserProfileProps) => {
       console.log("Public URL generated:", avatar_url);
       
       // Update local state with the new avatar URL
-      setUserData({ ...userData, avatar_url });
+      setUserData(prevState => ({ ...prevState, avatar_url }));
       
       // Update advertiser profile in database
       await updateAdvertiserProfile({ avatar_url });
@@ -131,6 +143,9 @@ const AdvertiserProfile = ({ initialData }: AdvertiserProfileProps) => {
     }
   };
 
+  const avatarUrl = userData.avatar_url || "/placeholder.svg";
+  console.log("Current avatar URL:", avatarUrl);
+
   return (
     <Card className="w-full max-w-2xl mx-auto">
       <CardHeader>
@@ -142,10 +157,10 @@ const AdvertiserProfile = ({ initialData }: AdvertiserProfileProps) => {
             <div className="relative mb-4 md:mb-0">
               <Avatar className="h-24 w-24">
                 <AvatarImage 
-                  src={userData.avatar_url} 
+                  src={avatarUrl} 
                   alt="Foto do perfil" 
                   onError={(e) => {
-                    console.log("Error loading avatar image");
+                    console.error("Error loading avatar image:", avatarUrl);
                     (e.target as HTMLImageElement).src = "/placeholder.svg";
                   }}
                 />
