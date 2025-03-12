@@ -1,13 +1,13 @@
 
 import React, { useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Camera, Loader2, CheckCircle, AlertCircle } from "lucide-react";
+import { Camera, Loader2, CheckCircle, AlertCircle, User } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAdvertiser } from "@/contexts/AdvertiserContext";
 
 interface AvatarUploadProps {
-  currentUrl?: string;
+  currentUrl?: string | null;
   userName: string;
   userEmail: string;
   onAvatarUpdated: (url: string) => void;
@@ -106,21 +106,35 @@ const AvatarUpload = ({ currentUrl, userName, userEmail, onAvatarUpdated }: Avat
     }
   };
 
-  const avatarUrl = currentUrl || "/placeholder.svg";
-  console.log("Current avatar URL:", avatarUrl);
+  // Get user's initials for the avatar fallback
+  const getInitials = () => {
+    if (!userName) return "U";
+    return userName.split(' ').map(n => n[0]).join('').toUpperCase();
+  };
+
+  // Safely check if we have a valid avatar URL
+  const hasValidAvatarUrl = currentUrl && currentUrl !== "/placeholder.svg";
+  
+  console.log("Avatar rendering with URL:", currentUrl, "Valid?", hasValidAvatarUrl);
 
   return (
     <div className="relative mb-4 md:mb-0">
       <Avatar className="h-24 w-24">
-        <AvatarImage 
-          src={avatarUrl} 
-          alt="Foto do perfil" 
-          onError={(e) => {
-            console.error("Error loading avatar image:", avatarUrl);
-            (e.target as HTMLImageElement).src = "/placeholder.svg";
-          }}
-        />
-        <AvatarFallback>{userName[0]}</AvatarFallback>
+        {hasValidAvatarUrl ? (
+          <AvatarImage 
+            src={currentUrl} 
+            alt="Foto do perfil" 
+            onError={(e) => {
+              console.error("Error loading avatar image:", currentUrl);
+              (e.target as HTMLImageElement).src = "/placeholder.svg";
+            }}
+          />
+        ) : (
+          <AvatarImage src="/placeholder.svg" alt="Avatar padrão" />
+        )}
+        <AvatarFallback className="bg-slate-200 text-slate-700 text-xl font-semibold">
+          {getInitials()}
+        </AvatarFallback>
       </Avatar>
       <label
         htmlFor="avatar-upload"

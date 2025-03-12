@@ -11,7 +11,7 @@ interface AdvertiserProfileProps {
     name: string;
     email: string;
     phone?: string;
-    avatar_url?: string;
+    avatar_url?: string | null;
   };
 }
 
@@ -22,7 +22,7 @@ const AdvertiserProfile = ({ initialData }: AdvertiserProfileProps) => {
     name: initialData?.name || "Anunciante",
     email: initialData?.email || "anunciante@example.com",
     phone: initialData?.phone || "",
-    avatar_url: initialData?.avatar_url || "/placeholder.svg",
+    avatar_url: initialData?.avatar_url || null,
   });
 
   // Update local state when advertiser data changes from context

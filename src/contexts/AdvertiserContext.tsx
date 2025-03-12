@@ -9,7 +9,7 @@ interface Advertiser {
   name: string;
   email: string;
   phone?: string;
-  avatar_url?: string;
+  avatar_url?: string | null;
 }
 
 interface AdvertiserContextType {
