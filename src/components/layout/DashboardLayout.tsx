@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -18,6 +19,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { useAdvertiser } from "@/contexts/AdvertiserContext";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -34,10 +36,10 @@ const navigation = [
 const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { logout, advertiser } = useAdvertiser();
 
   const handleLogout = () => {
-    // TODO: Implement logout logic
-    navigate("/advertiser/login");
+    logout();
   };
 
   const NavContent = () => (
@@ -80,7 +82,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         </Sheet>
 
         <div className="flex items-center space-x-2">
-          <UserMenu onLogout={handleLogout} />
+          <UserMenu onLogout={handleLogout} avatar={advertiser?.avatar_url} name={advertiser?.name} />
         </div>
       </div>
 
@@ -95,7 +97,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
               <NavContent />
             </div>
             <div className="p-4 border-t">
-              <UserMenu onLogout={handleLogout} />
+              <UserMenu onLogout={handleLogout} avatar={advertiser?.avatar_url} name={advertiser?.name} />
             </div>
           </div>
         </div>
@@ -111,16 +113,18 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
 
 interface UserMenuProps {
   onLogout: () => void;
+  avatar?: string;
+  name?: string;
 }
 
-const UserMenu = ({ onLogout }: UserMenuProps) => {
+const UserMenu = ({ onLogout, avatar, name }: UserMenuProps) => {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-10 w-10 rounded-full">
           <Avatar className="h-10 w-10">
-            <AvatarImage src="/placeholder.svg" alt="User avatar" />
-            <AvatarFallback>U</AvatarFallback>
+            <AvatarImage src={avatar || "/placeholder.svg"} alt={`${name || 'User'} avatar`} />
+            <AvatarFallback>{name ? name[0].toUpperCase() : 'U'}</AvatarFallback>
           </Avatar>
         </Button>
       </DropdownMenuTrigger>

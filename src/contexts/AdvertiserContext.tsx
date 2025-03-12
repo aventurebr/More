@@ -15,8 +15,8 @@ interface Advertiser {
 interface AdvertiserContextType {
   advertiser: Advertiser | null;
   setAdvertiser: (advertiser: Advertiser | null) => void;
-  updateAdvertiserProfile: (data: Partial<Advertiser>) => void;
-  logout: () => void;
+  updateAdvertiserProfile: (data: Partial<Advertiser>) => Promise<void>;
+  logout: () => Promise<void>;
   isLoading: boolean;
 }
 
@@ -31,9 +31,11 @@ export function AdvertiserProvider({ children }: { children: React.ReactNode }) 
     // Check for current Supabase session
     const fetchAdvertiser = async () => {
       try {
+        console.log("Fetching advertiser profile...");
         const { data } = await supabase.auth.getSession();
         
         if (data.session) {
+          console.log("Session found, fetching advertiser data...");
           // Get advertiser profile from database
           const { data: advertiserData, error } = await supabase
             .from('advertisers')
@@ -47,7 +49,10 @@ export function AdvertiserProvider({ children }: { children: React.ReactNode }) 
             return;
           }
           
+          console.log("Advertiser data fetched:", advertiserData);
           setAdvertiser(advertiserData);
+        } else {
+          console.log("No session found");
         }
       } catch (error) {
         console.error("Error checking auth session:", error);
@@ -61,7 +66,9 @@ export function AdvertiserProvider({ children }: { children: React.ReactNode }) 
     // Subscribe to auth changes
     const { data: authListener } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log("Auth state changed:", event);
         if (event === 'SIGNED_IN' && session) {
+          console.log("User signed in, fetching profile...");
           // Get advertiser profile when signed in
           const { data, error } = await supabase
             .from('advertisers')
@@ -70,9 +77,13 @@ export function AdvertiserProvider({ children }: { children: React.ReactNode }) 
             .single();
           
           if (!error && data) {
+            console.log("Profile data:", data);
             setAdvertiser(data);
+          } else if (error) {
+            console.error("Error fetching profile after sign in:", error);
           }
         } else if (event === 'SIGNED_OUT') {
+          console.log("User signed out");
           setAdvertiser(null);
         }
       }
@@ -85,15 +96,20 @@ export function AdvertiserProvider({ children }: { children: React.ReactNode }) 
 
   // Update advertiser profile data and persist changes
   const updateAdvertiserProfile = async (data: Partial<Advertiser>) => {
-    if (!advertiser || !advertiser.id) return;
+    if (!advertiser || !advertiser.id) {
+      console.error("Cannot update profile: No advertiser data or ID");
+      return;
+    }
 
     try {
+      console.log("Updating advertiser profile with:", data);
       const { error } = await supabase
         .from('advertisers')
         .update(data)
         .eq('id', advertiser.id);
       
       if (error) {
+        console.error("Error in supabase update:", error);
         throw error;
       }
       
@@ -103,6 +119,7 @@ export function AdvertiserProvider({ children }: { children: React.ReactNode }) 
     } catch (error) {
       console.error("Error updating profile:", error);
       toast.error("Erro ao atualizar perfil. Tente novamente.");
+      throw error;
     }
   };
 

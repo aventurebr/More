@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import AdvertiserProfile from "@/components/dashboard/AdvertiserProfile";
 import { useAdvertiser } from "@/contexts/AdvertiserContext";
@@ -12,6 +12,19 @@ import { Separator } from "@/components/ui/separator";
 const Settings = () => {
   const { advertiser, isLoading } = useAdvertiser();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    // Check authentication status when component mounts
+    const checkAuth = async () => {
+      const { data } = await supabase.auth.getSession();
+      if (!data.session) {
+        toast.error("Sessão expirada. Por favor, faça login novamente.");
+        navigate("/advertiser/login");
+      }
+    };
+    
+    checkAuth();
+  }, [navigate]);
 
   // Function to check auth status for debugging
   const checkAuthStatus = async () => {
@@ -43,8 +56,19 @@ const Settings = () => {
   }
 
   if (!advertiser) {
-    navigate("/advertiser/login");
-    return null;
+    return (
+      <DashboardLayout>
+        <div className="text-center py-20">
+          <p className="text-lg text-red-500">Usuário não autenticado</p>
+          <Button 
+            onClick={() => navigate("/advertiser/login")} 
+            className="mt-4"
+          >
+            Ir para login
+          </Button>
+        </div>
+      </DashboardLayout>
+    );
   }
 
   return (
