@@ -10,6 +10,9 @@ import {
   Star,
   LogOut,
   Menu,
+  Heart,
+  Clock,
+  User
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -20,12 +23,14 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useAdvertiser } from "@/contexts/AdvertiserContext";
+import { useUser } from "@/contexts/UserContext";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
 }
 
-const navigation = [
+// Navigation for advertisers
+const advertiserNavigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "Meus Quartos", href: "/dashboard/rooms", icon: Home },
   { name: "Mensagens", href: "/dashboard/messages", icon: MessageSquare },
@@ -33,20 +38,37 @@ const navigation = [
   { name: "Configurações", href: "/dashboard/settings", icon: Settings },
 ];
 
+// Navigation for clients
+const clientNavigation = [
+  { name: "Minha Conta", href: "/dashboard", icon: User },
+  { name: "Favoritos", href: "/dashboard/favorites", icon: Heart },
+  { name: "Histórico de Visitas", href: "/dashboard/visits", icon: Clock },
+  { name: "Configurações", href: "/dashboard/settings", icon: Settings },
+];
+
 const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { logout, advertiser } = useAdvertiser();
+  const { logout: advertiserLogout, advertiser } = useAdvertiser();
+  const { logout: userLogout, user } = useUser();
   const [avatarKey, setAvatarKey] = useState(Date.now());
 
-  // Force avatar re-render when advertiser data changes
+  // Determine if we're in advertiser or client mode
+  const isAdvertiser = !!advertiser;
+  const navigation = isAdvertiser ? advertiserNavigation : clientNavigation;
+
+  // Force avatar re-render when data changes
   useEffect(() => {
     setAvatarKey(Date.now());
-    console.log("Avatar should update with URL:", advertiser?.avatar_url);
-  }, [advertiser?.avatar_url]);
+    console.log("Avatar should update with URL:", isAdvertiser ? advertiser?.avatar_url : user?.avatar_url);
+  }, [advertiser?.avatar_url, user?.avatar_url, isAdvertiser]);
 
   const handleLogout = () => {
-    logout();
+    if (isAdvertiser) {
+      advertiserLogout();
+    } else {
+      userLogout();
+    }
   };
 
   const NavContent = () => (
@@ -92,8 +114,8 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           <UserMenu 
             key={`mobile-avatar-${avatarKey}`} 
             onLogout={handleLogout} 
-            avatar={advertiser?.avatar_url} 
-            name={advertiser?.name} 
+            avatar={isAdvertiser ? advertiser?.avatar_url : user?.avatar_url} 
+            name={isAdvertiser ? advertiser?.name : user?.name} 
           />
         </div>
       </div>
@@ -112,8 +134,8 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
               <UserMenu 
                 key={`desktop-avatar-${avatarKey}`}
                 onLogout={handleLogout} 
-                avatar={advertiser?.avatar_url} 
-                name={advertiser?.name} 
+                avatar={isAdvertiser ? advertiser?.avatar_url : user?.avatar_url} 
+                name={isAdvertiser ? advertiser?.name : user?.name} 
               />
             </div>
           </div>

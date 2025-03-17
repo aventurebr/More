@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,6 +8,7 @@ import { Link } from "react-router-dom";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, BarChart, Bar, ResponsiveContainer } from "recharts";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useAdvertiser } from "@/contexts/AdvertiserContext";
 
 // Mock data for charts
 const occupancyData = [
@@ -58,6 +60,12 @@ const stats = [
 const Dashboard = () => {
   const [timeRange, setTimeRange] = useState("7d");
   const recentRooms = mockRoomData.slice(0, 3);
+  const { advertiser } = useAdvertiser();
+
+  // This dashboard is for advertisers only
+  if (!advertiser) {
+    return null;
+  }
 
   return (
     <DashboardLayout>
