@@ -1,7 +1,7 @@
 
 import React, { useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Camera, Loader2, CheckCircle, AlertCircle, User } from "lucide-react";
+import { Camera, Loader2, CheckCircle, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAdvertiser } from "@/contexts/AdvertiserContext";
@@ -40,12 +40,12 @@ const AvatarUpload = ({ currentUrl, userName, userEmail, onAvatarUpdated }: Avat
       const extension = file.name.split('.').pop();
       const filename = `${timestamp}.${extension}`;
       
-      const uploadPath = `advertiser-avatars/${userEmail}/${filename}`;
+      const uploadPath = `avatars/${filename}`;
       console.log("Upload path:", uploadPath);
       
       // Upload file to Supabase Storage
       const { data, error } = await supabase.storage
-        .from('avatars')
+        .from('advertiser-assets')
         .upload(uploadPath, file);
       
       if (error) {
@@ -57,7 +57,7 @@ const AvatarUpload = ({ currentUrl, userName, userEmail, onAvatarUpdated }: Avat
       
       // Get public URL for the uploaded file
       const { data: publicUrlData } = supabase.storage
-        .from('avatars')
+        .from('advertiser-assets')
         .getPublicUrl(uploadPath);
       
       const avatar_url = publicUrlData.publicUrl;
@@ -113,7 +113,7 @@ const AvatarUpload = ({ currentUrl, userName, userEmail, onAvatarUpdated }: Avat
   };
 
   // Safely check if we have a valid avatar URL
-  const hasValidAvatarUrl = currentUrl && currentUrl !== "/placeholder.svg";
+  const hasValidAvatarUrl = currentUrl && currentUrl !== "" && currentUrl !== null;
   
   console.log("Avatar rendering with URL:", currentUrl, "Valid?", hasValidAvatarUrl);
 
@@ -130,11 +130,10 @@ const AvatarUpload = ({ currentUrl, userName, userEmail, onAvatarUpdated }: Avat
             }}
           />
         ) : (
-          <AvatarImage src="/placeholder.svg" alt="Avatar padrão" />
+          <AvatarFallback className="bg-slate-200 text-slate-700 text-xl font-semibold">
+            {getInitials()}
+          </AvatarFallback>
         )}
-        <AvatarFallback className="bg-slate-200 text-slate-700 text-xl font-semibold">
-          {getInitials()}
-        </AvatarFallback>
       </Avatar>
       <label
         htmlFor="avatar-upload"
