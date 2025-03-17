@@ -18,6 +18,7 @@ interface AdvertiserContextType {
   updateAdvertiserProfile: (data: Partial<Advertiser>) => Promise<void>;
   logout: () => Promise<void>;
   isLoading: boolean;
+  refreshProfile: () => Promise<void>;
 }
 
 const AdvertiserContext = createContext<AdvertiserContextType | undefined>(undefined);
@@ -27,41 +28,65 @@ export function AdvertiserProvider({ children }: { children: React.ReactNode }) 
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
 
+  // Function to fetch advertiser profile data
+  const fetchAdvertiserProfile = async () => {
+    try {
+      console.log("Fetching advertiser profile...");
+      const { data: session } = await supabase.auth.getSession();
+      
+      if (session && session.session) {
+        console.log("Session found, fetching advertiser data...");
+        // Get advertiser profile from database
+        const { data: advertiserData, error } = await supabase
+          .from('advertisers')
+          .select('*')
+          .eq('id', session.session.user.id)
+          .single();
+        
+        if (error) {
+          console.error("Error fetching advertiser profile:", error);
+          return null;
+        }
+        
+        console.log("Advertiser data fetched:", advertiserData);
+        return advertiserData;
+      } else {
+        console.log("No session found");
+        return null;
+      }
+    } catch (error) {
+      console.error("Error checking auth session:", error);
+      return null;
+    }
+  };
+
+  // Function to refresh profile that can be called from components
+  const refreshProfile = async () => {
+    setIsLoading(true);
+    const profile = await fetchAdvertiserProfile();
+    if (profile) {
+      setAdvertiser(profile);
+    }
+    setIsLoading(false);
+  };
+
   useEffect(() => {
     // Check for current Supabase session
-    const fetchAdvertiser = async () => {
+    const initializeAdvertiser = async () => {
       try {
-        console.log("Fetching advertiser profile...");
-        const { data } = await supabase.auth.getSession();
-        
-        if (data.session) {
-          console.log("Session found, fetching advertiser data...");
-          // Get advertiser profile from database
-          const { data: advertiserData, error } = await supabase
-            .from('advertisers')
-            .select('*')
-            .eq('id', data.session.user.id)
-            .single();
-          
-          if (error) {
-            console.error("Error fetching advertiser profile:", error);
-            setIsLoading(false);
-            return;
-          }
-          
-          console.log("Advertiser data fetched:", advertiserData);
-          setAdvertiser(advertiserData);
-        } else {
-          console.log("No session found");
+        setIsLoading(true);
+        const profile = await fetchAdvertiserProfile();
+        if (profile) {
+          setAdvertiser(profile);
         }
       } catch (error) {
-        console.error("Error checking auth session:", error);
+        console.error("Error initializing advertiser:", error);
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchAdvertiser();
+    initializeAdvertiser();
 
     // Subscribe to auth changes
     const { data: authListener } = supabase.auth.onAuthStateChange(
@@ -69,19 +94,12 @@ export function AdvertiserProvider({ children }: { children: React.ReactNode }) 
         console.log("Auth state changed:", event);
         if (event === 'SIGNED_IN' && session) {
           console.log("User signed in, fetching profile...");
-          // Get advertiser profile when signed in
-          const { data, error } = await supabase
-            .from('advertisers')
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
-          
-          if (!error && data) {
-            console.log("Profile data:", data);
-            setAdvertiser(data);
-          } else if (error) {
-            console.error("Error fetching profile after sign in:", error);
+          setIsLoading(true);
+          const profile = await fetchAdvertiserProfile();
+          if (profile) {
+            setAdvertiser(profile);
           }
+          setIsLoading(false);
         } else if (event === 'SIGNED_OUT') {
           console.log("User signed out");
           setAdvertiser(null);
@@ -148,6 +166,7 @@ export function AdvertiserProvider({ children }: { children: React.ReactNode }) 
         updateAdvertiserProfile,
         logout,
         isLoading,
+        refreshProfile,
       }}
     >
       {children}

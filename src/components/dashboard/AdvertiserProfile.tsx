@@ -16,7 +16,7 @@ interface AdvertiserProfileProps {
 }
 
 const AdvertiserProfile = ({ initialData }: AdvertiserProfileProps) => {
-  const { updateAdvertiserProfile, advertiser } = useAdvertiser();
+  const { updateAdvertiserProfile, advertiser, refreshProfile } = useAdvertiser();
   const [isEditing, setIsEditing] = useState(false);
   const [userData, setUserData] = useState({
     name: initialData?.name || "Anunciante",
@@ -28,6 +28,7 @@ const AdvertiserProfile = ({ initialData }: AdvertiserProfileProps) => {
   // Update local state when advertiser data changes from context
   useEffect(() => {
     if (advertiser) {
+      console.log("Updating profile component with data:", advertiser);
       setUserData({
         name: advertiser.name || userData.name,
         email: advertiser.email || userData.email,
@@ -43,6 +44,10 @@ const AdvertiserProfile = ({ initialData }: AdvertiserProfileProps) => {
 
   const handleAvatarUpdated = (url: string) => {
     setUserData(prev => ({ ...prev, avatar_url: url }));
+    // Refresh advertiser profile data from database to ensure everything is in sync
+    setTimeout(() => {
+      refreshProfile();
+    }, 1000);
   };
 
   const handleSave = async () => {
@@ -55,6 +60,8 @@ const AdvertiserProfile = ({ initialData }: AdvertiserProfileProps) => {
       });
       
       toast.success("Perfil atualizado com sucesso!");
+      // Refresh profile data from database to ensure everything is in sync
+      refreshProfile();
     } catch (error) {
       toast.error("Erro ao atualizar o perfil. Tente novamente.");
     }

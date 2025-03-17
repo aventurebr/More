@@ -10,7 +10,7 @@ import { useNavigate } from "react-router-dom";
 import { Separator } from "@/components/ui/separator";
 
 const Settings = () => {
-  const { advertiser, isLoading } = useAdvertiser();
+  const { advertiser, isLoading, refreshProfile } = useAdvertiser();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -20,11 +20,14 @@ const Settings = () => {
       if (!data.session) {
         toast.error("Sessão expirada. Por favor, faça login novamente.");
         navigate("/advertiser/login");
+      } else {
+        // Force refresh profile data from database
+        refreshProfile();
       }
     };
     
     checkAuth();
-  }, [navigate]);
+  }, [navigate, refreshProfile]);
 
   // Function to check auth status for debugging
   const checkAuthStatus = async () => {
@@ -40,17 +43,7 @@ const Settings = () => {
       console.log("Auth session:", data.session);
       
       // Refresh profile data from database
-      const { data: advertiserData, error: advertiserError } = await supabase
-        .from('advertisers')
-        .select('*')
-        .eq('id', data.session.user.id)
-        .single();
-      
-      if (advertiserError) {
-        console.error("Error fetching refreshed advertiser data:", advertiserError);
-      } else {
-        console.log("Refreshed advertiser data:", advertiserData);
-      }
+      refreshProfile();
       
     } else {
       toast.error("Usuário não autenticado!");
