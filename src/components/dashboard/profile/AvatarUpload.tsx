@@ -38,15 +38,19 @@ const AvatarUpload = ({ currentUrl, userName, userEmail, onAvatarUpdated }: Avat
       // Create a unique filename using timestamp and original file extension
       const timestamp = Date.now();
       const extension = file.name.split('.').pop();
-      const filename = `${timestamp}.${extension}`;
+      const filename = `avatar-${timestamp}.${extension}`;
       
-      const uploadPath = `avatars/${filename}`;
+      // Using a direct path in the root of the bucket for simplicity
+      const uploadPath = `${filename}`;
       console.log("Upload path:", uploadPath);
       
       // Upload file to Supabase Storage
       const { data, error } = await supabase.storage
         .from('advertiser-assets')
-        .upload(uploadPath, file);
+        .upload(uploadPath, file, {
+          cacheControl: '3600',
+          upsert: true
+        });
       
       if (error) {
         console.error("Upload error:", error);
