@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import FadeIn from "@/components/animations/FadeIn";
 import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
+import { Label } from "@/components/ui/label";
 
 const Register = () => {
   const [name, setName] = useState("");
@@ -18,13 +19,14 @@ const Register = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [phone, setPhone] = useState("");
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!name || !email || !password || !confirmPassword) {
-      toast.error("Por favor, preencha todos os campos");
+      toast.error("Por favor, preencha todos os campos obrigatórios");
       return;
     }
     
@@ -47,7 +49,8 @@ const Register = () => {
         password,
         options: {
           data: {
-            name: name
+            name,
+            phone
           }
         }
       });
@@ -63,6 +66,7 @@ const Register = () => {
               id: data.user.id,
               Nome: name,
               Email: email,
+              telefone: phone || null,
               Url_avatar_client: "/placeholder.svg",
               "Criado em": new Date().toISOString()
             }
@@ -114,11 +118,13 @@ const Register = () => {
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
+                <Label htmlFor="name">Nome completo</Label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
                     <User className="h-5 w-5 text-gray-400" />
                   </div>
                   <Input
+                    id="name"
                     type="text"
                     placeholder="Seu nome completo"
                     className="pl-10"
@@ -130,11 +136,13 @@ const Register = () => {
               </div>
               
               <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
                     <Mail className="h-5 w-5 text-gray-400" />
                   </div>
                   <Input
+                    id="email"
                     type="email"
                     placeholder="Seu e-mail"
                     className="pl-10"
@@ -144,13 +152,28 @@ const Register = () => {
                   />
                 </div>
               </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="phone">Telefone (opcional)</Label>
+                <div className="relative">
+                  <Input
+                    id="phone"
+                    type="tel"
+                    placeholder="(XX) XXXXX-XXXX"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                  />
+                </div>
+              </div>
               
               <div className="space-y-2">
+                <Label htmlFor="password">Senha</Label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
                     <Lock className="h-5 w-5 text-gray-400" />
                   </div>
                   <Input
+                    id="password"
                     type={showPassword ? "text" : "password"}
                     placeholder="Crie uma senha"
                     className="pl-10 pr-10"
@@ -175,11 +198,13 @@ const Register = () => {
               </div>
               
               <div className="space-y-2">
+                <Label htmlFor="confirmPassword">Confirmar senha</Label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
                     <Lock className="h-5 w-5 text-gray-400" />
                   </div>
                   <Input
+                    id="confirmPassword"
                     type={showPassword ? "text" : "password"}
                     placeholder="Confirme sua senha"
                     className="pl-10"

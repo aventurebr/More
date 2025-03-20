@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,6 +9,7 @@ interface User {
   name: string;
   email: string;
   avatar?: string;
+  phone?: string;
 }
 
 interface UserContextType {
@@ -56,7 +58,8 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
               id: session.user.id,
               name: data.Nome,
               email: data.Email,
-              avatar: data.Url_avatar_client
+              avatar: data.Url_avatar_client,
+              phone: data.telefone
             };
             setUser(userData);
           } else if (error && error.code !== 'PGRST116') {
@@ -102,7 +105,8 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
           id: data.user.id,
           name: clientData?.Nome || email.split("@")[0],
           email: data.user.email || email,
-          avatar: clientData?.Url_avatar_client || "/placeholder.svg"
+          avatar: clientData?.Url_avatar_client || "/placeholder.svg",
+          phone: clientData?.telefone
         };
         
         // Save user data based on rememberMe preference

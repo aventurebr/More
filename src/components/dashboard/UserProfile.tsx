@@ -1,26 +1,33 @@
+
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Camera, Loader2 } from "lucide-react";
+import { Camera, Loader2, Phone } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { Label } from "@/components/ui/label";
 
 interface UserProfileProps {
   initialData?: {
+    id?: string;
     name: string;
     email: string;
     avatar?: string;
+    phone?: string;
   };
 }
 
 const UserProfile = ({ initialData }: UserProfileProps) => {
   const [isEditing, setIsEditing] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [userData, setUserData] = useState({
     name: initialData?.name || "Usuário",
     email: initialData?.email || "usuario@example.com",
     avatar: initialData?.avatar || "/placeholder.svg",
+    phone: initialData?.phone || "",
   });
 
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -34,14 +41,50 @@ const UserProfile = ({ initialData }: UserProfileProps) => {
 
     setIsUploading(true);
     try {
-      // Simulate upload delay
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      if (!initialData?.id) {
+        throw new Error("ID do usuário não encontrado");
+      }
       
-      // TODO: Implement actual image upload logic
-      const imageUrl = URL.createObjectURL(file);
-      setUserData({ ...userData, avatar: imageUrl });
+      // Upload the file to Supabase Storage
+      const fileName = `avatar-${initialData.id}-${Date.now()}`;
+      const { error: uploadError, data } = await supabase.storage
+        .from('avatars')
+        .upload(fileName, file);
+        
+      if (uploadError) throw uploadError;
+      
+      // Get the public URL for the uploaded file
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(fileName);
+      
+      // Update the client record with the new avatar URL
+      const { error: updateError } = await supabase
+        .from('client')
+        .update({ Url_avatar_client: publicUrl })
+        .eq('id', initialData.id);
+        
+      if (updateError) throw updateError;
+      
+      // Update local state
+      setUserData({ ...userData, avatar: publicUrl });
+      
+      // Update localStorage/sessionStorage if they exist
+      const savedUser = localStorage.getItem("user");
+      if (savedUser) {
+        const parsedUser = JSON.parse(savedUser);
+        localStorage.setItem("user", JSON.stringify({...parsedUser, avatar: publicUrl}));
+      }
+      
+      const sessionUser = sessionStorage.getItem("user");
+      if (sessionUser) {
+        const parsedUser = JSON.parse(sessionUser);
+        sessionStorage.setItem("user", JSON.stringify({...parsedUser, avatar: publicUrl}));
+      }
+      
       toast.success("Foto atualizada com sucesso!");
-    } catch (error) {
+    } catch (error: any) {
+      console.error("Error updating avatar:", error);
       toast.error("Erro ao atualizar a foto. Tente novamente.");
     } finally {
       setIsUploading(false);
@@ -49,13 +92,55 @@ const UserProfile = ({ initialData }: UserProfileProps) => {
   };
 
   const handleSave = async () => {
-    setIsEditing(false);
+    if (!initialData?.id) {
+      toast.error("ID do usuário não encontrado");
+      return;
+    }
+    
+    setIsSaving(true);
     try {
-      // TODO: Implement actual save logic
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      // Update the client record in Supabase
+      const { error } = await supabase
+        .from('client')
+        .update({
+          Nome: userData.name,
+          Email: userData.email,
+          telefone: userData.phone || null
+        })
+        .eq('id', initialData.id);
+        
+      if (error) throw error;
+      
+      // Update localStorage/sessionStorage if they exist
+      const savedUser = localStorage.getItem("user");
+      if (savedUser) {
+        const parsedUser = JSON.parse(savedUser);
+        localStorage.setItem("user", JSON.stringify({
+          ...parsedUser, 
+          name: userData.name,
+          email: userData.email,
+          phone: userData.phone
+        }));
+      }
+      
+      const sessionUser = sessionStorage.getItem("user");
+      if (sessionUser) {
+        const parsedUser = JSON.parse(sessionUser);
+        sessionStorage.setItem("user", JSON.stringify({
+          ...parsedUser, 
+          name: userData.name,
+          email: userData.email,
+          phone: userData.phone
+        }));
+      }
+      
+      setIsEditing(false);
       toast.success("Perfil atualizado com sucesso!");
-    } catch (error) {
+    } catch (error: any) {
+      console.error("Error updating profile:", error);
       toast.error("Erro ao atualizar o perfil. Tente novamente.");
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -94,6 +179,11 @@ const UserProfile = ({ initialData }: UserProfileProps) => {
             <div className="text-left">
               <h3 className="text-lg font-medium">{userData.name}</h3>
               <p className="text-sm text-muted-foreground">{userData.email}</p>
+              {userData.phone && (
+                <p className="text-sm text-muted-foreground flex items-center gap-1">
+                  <Phone className="h-3 w-3" /> {userData.phone}
+                </p>
+              )}
             </div>
           </div>
           <p className="text-sm text-muted-foreground">
@@ -103,15 +193,20 @@ const UserProfile = ({ initialData }: UserProfileProps) => {
 
         <div className="space-y-4">
           <div className="space-y-2">
+            <Label htmlFor="profile-name">Nome</Label>
             <Input
+              id="profile-name"
               value={userData.name}
               onChange={(e) => setUserData({ ...userData, name: e.target.value })}
               placeholder="Seu nome"
               disabled={!isEditing}
             />
           </div>
+          
           <div className="space-y-2">
+            <Label htmlFor="profile-email">Email</Label>
             <Input
+              id="profile-email"
               value={userData.email}
               onChange={(e) => setUserData({ ...userData, email: e.target.value })}
               placeholder="Seu e-mail"
@@ -119,20 +214,42 @@ const UserProfile = ({ initialData }: UserProfileProps) => {
               disabled={!isEditing}
             />
           </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="profile-phone">Telefone</Label>
+            <Input
+              id="profile-phone"
+              value={userData.phone}
+              onChange={(e) => setUserData({ ...userData, phone: e.target.value })}
+              placeholder="Seu telefone"
+              type="tel"
+              disabled={!isEditing}
+            />
+          </div>
+          
           <div className="flex justify-end space-x-2">
             {isEditing ? (
               <>
                 <Button
                   variant="outline"
                   onClick={() => setIsEditing(false)}
+                  disabled={isSaving}
                 >
                   Cancelar
                 </Button>
                 <Button
                   onClick={handleSave}
                   className="bg-slate-700 hover:bg-slate-800"
+                  disabled={isSaving}
                 >
-                  Salvar
+                  {isSaving ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Salvando...
+                    </>
+                  ) : (
+                    "Salvar"
+                  )}
                 </Button>
               </>
             ) : (
