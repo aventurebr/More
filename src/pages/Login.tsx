@@ -25,9 +25,8 @@ const Login = () => {
       try {
         await loginWithGoogle(tokenResponse, rememberMe);
         toast.success("Login com Google realizado com sucesso!");
-      } catch (error: any) {
-        console.error("Google login error:", error);
-        toast.error("Ocorreu um erro durante o login com Google: " + (error.message || "Tente novamente"));
+      } catch (error) {
+        toast.error("Ocorreu um erro durante o login com Google.");
       }
     },
     onError: () => {
@@ -47,14 +46,8 @@ const Login = () => {
     try {
       await login(email, password, rememberMe);
       toast.success("Login realizado com sucesso!");
-    } catch (error: any) {
-      console.error("Login error:", error);
-      
-      if (error.message && error.message.includes("Invalid login")) {
-        toast.error("Email ou senha incorretos. Tente novamente.");
-      } else {
-        toast.error("Falha ao fazer login: " + (error.message || "Tente novamente"));
-      }
+    } catch (error) {
+      toast.error("Falha ao fazer login. Tente novamente.");
     }
   };
 

@@ -1,15 +1,11 @@
-
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
 
 interface User {
   id?: string;
   name: string;
   email: string;
   avatar?: string;
-  phone?: string;
 }
 
 interface UserContextType {
@@ -41,87 +37,32 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     if (sessionUser) {
       setUser(JSON.parse(sessionUser));
     }
-
-    // Set up auth state listener to keep user state in sync with Supabase
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (session && session.user) {
-          // Fetch user data from the client table
-          const { data, error } = await supabase
-            .from('client')
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
-          
-          if (data) {
-            const userData = {
-              id: session.user.id,
-              name: data.Nome,
-              email: data.Email,
-              avatar: data.Url_avatar_client,
-              phone: data.telefone
-            };
-            setUser(userData);
-          } else if (error && error.code !== 'PGRST116') {
-            // PGRST116 is the error code for "no rows returned"
-            console.error("Error fetching user data:", error);
-          }
-        } else {
-          setUser(null);
-        }
-      }
-    );
-
-    return () => {
-      subscription.unsubscribe();
-    };
   }, []);
 
   const login = async (email: string, password: string, rememberMe: boolean = false) => {
     setIsLoading(true);
     try {
-      // Actual authentication with Supabase
-      const { data, error } = await supabase.auth.signInWithPassword({
+      // Simulate API call - Replace with actual authentication
+      const mockUser = {
+        id: "1",
+        name: email.split("@")[0],
         email,
-        password
-      });
+        avatar: "/placeholder.svg",
+      };
       
-      if (error) throw error;
-      
-      if (data.user) {
-        // Fetch user data from client table
-        const { data: clientData, error: clientError } = await supabase
-          .from('client')
-          .select('*')
-          .eq('id', data.user.id)
-          .single();
-        
-        if (clientError && clientError.code !== 'PGRST116') {
-          console.error("Error fetching client data:", clientError);
-        }
-        
-        // Create user object with data from database
-        const userData = {
-          id: data.user.id,
-          name: clientData?.Nome || email.split("@")[0],
-          email: data.user.email || email,
-          avatar: clientData?.Url_avatar_client || "/placeholder.svg",
-          phone: clientData?.telefone
-        };
-        
-        // Save user data based on rememberMe preference
-        if (rememberMe) {
-          localStorage.setItem("user", JSON.stringify(userData));
-        } else {
-          sessionStorage.setItem("user", JSON.stringify(userData));
-        }
-        
-        setUser(userData);
-        navigate("/dashboard/client-profile");
+      // Save user data based on rememberMe preference
+      if (rememberMe) {
+        // Save to localStorage for persistent login across sessions
+        localStorage.setItem("user", JSON.stringify(mockUser));
+      } else {
+        // Save to sessionStorage for current session only
+        sessionStorage.setItem("user", JSON.stringify(mockUser));
       }
-    } catch (error: any) {
-      console.error("Login error:", error.message);
-      throw error;
+      
+      setUser(mockUser);
+      navigate("/dashboard/client-profile");
+    } catch (error) {
+      throw new Error("Failed to login");
     } finally {
       setIsLoading(false);
     }
@@ -130,39 +71,36 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   const loginWithGoogle = async (credential: any, rememberMe: boolean = false) => {
     setIsLoading(true);
     try {
-      // Will be implemented with Supabase Google Auth
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: window.location.origin + '/dashboard/client-profile'
-        }
-      });
+      // Simulate API call - Replace with actual Google auth verification
+      const mockUser = {
+        id: "2",
+        name: "Google User",
+        email: "user@gmail.com",
+        avatar: "/placeholder.svg",
+      };
       
-      if (error) throw error;
+      // Save user data based on rememberMe preference
+      if (rememberMe) {
+        // Save to localStorage for persistent login across sessions
+        localStorage.setItem("user", JSON.stringify(mockUser));
+      } else {
+        // Save to sessionStorage for current session only
+        sessionStorage.setItem("user", JSON.stringify(mockUser));
+      }
       
-      // The actual user data will be processed in the onAuthStateChange listener
-      // after the OAuth redirect completes
-    } catch (error: any) {
-      console.error("Google login error:", error.message);
-      throw error;
+      setUser(mockUser);
+      navigate("/dashboard/client-profile");
+    } catch (error) {
+      throw new Error("Failed to login with Google");
     } finally {
       setIsLoading(false);
     }
   };
 
-  const logout = async () => {
-    setIsLoading(true);
-    try {
-      await supabase.auth.signOut();
-      localStorage.removeItem("user");
-      sessionStorage.removeItem("user");
-      setUser(null);
-      navigate("/");
-    } catch (error) {
-      console.error("Logout error:", error);
-    } finally {
-      setIsLoading(false);
-    }
+  const logout = () => {
+    localStorage.removeItem("user");
+    setUser(null);
+    navigate("/");
   };
 
   return (

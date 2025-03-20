@@ -1,249 +1,188 @@
-import React, { useState } from "react";
+
+import React, { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
+  LayoutDashboard,
+  Home,
+  MessageSquare,
+  Settings,
+  Star,
+  LogOut,
+  Menu,
+  Heart,
+  Clock,
+  User
+} from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import {
-  Building2,
-  HomeIcon,
-  Menu,
-  MessageSquare,
-  Settings,
-  Star,
-  User as UserIcon,
-  LogOut,
-} from "lucide-react";
-import { useUser } from "@/contexts/UserContext";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useAdvertiser } from "@/contexts/AdvertiserContext";
+import { useUser } from "@/contexts/UserContext";
 
-const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
+interface DashboardLayoutProps {
+  children: React.ReactNode;
+}
+
+// Navigation for advertisers
+const advertiserNavigation = [
+  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { name: "Meus Quartos", href: "/dashboard/rooms", icon: Home },
+  { name: "Mensagens", href: "/dashboard/messages", icon: MessageSquare },
+  { name: "Avaliações", href: "/dashboard/reviews", icon: Star },
+  { name: "Configurações", href: "/dashboard/settings", icon: Settings },
+];
+
+// Navigation for clients
+const clientNavigation = [
+  { name: "Minha Conta", href: "/dashboard", icon: User },
+  { name: "Favoritos", href: "/dashboard/favorites", icon: Heart },
+  { name: "Histórico de Visitas", href: "/dashboard/visits", icon: Clock },
+  { name: "Configurações", href: "/dashboard/settings", icon: Settings },
+];
+
+const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, logout } = useUser();
-  const { advertiser } = useAdvertiser();
-  const [open, setOpen] = useState(false);
+  const { logout: advertiserLogout, advertiser } = useAdvertiser();
+  const { logout: userLogout, user } = useUser();
+  const [avatarKey, setAvatarKey] = useState(Date.now());
 
-  // Determine if the user is in advertiser mode or client mode
-  const isAdvertiser = location.pathname.includes("advertiser");
+  // Determine if we're in advertiser or client mode
+  const isAdvertiser = !!advertiser;
+  const navigation = isAdvertiser ? advertiserNavigation : clientNavigation;
+
+  // Force avatar re-render when data changes
+  useEffect(() => {
+    setAvatarKey(Date.now());
+    console.log("Avatar should update with URL:", isAdvertiser ? advertiser?.avatar_url : user?.avatar_url);
+  }, [advertiser?.avatar_url, user?.avatar_url, isAdvertiser]);
 
   const handleLogout = () => {
-    logout();
-    navigate("/");
+    if (isAdvertiser) {
+      advertiserLogout();
+    } else {
+      userLogout();
+    }
   };
 
-  const clientLinks = [
-    {
-      href: "/dashboard/client-profile",
-      label: "Minha Conta",
-      icon: <UserIcon className="w-5 h-5 mr-2" />,
-      active: location.pathname === "/dashboard" || location.pathname === "/dashboard/client-profile",
-    },
-    {
-      href: "/dashboard/rooms",
-      label: "Meus Quartos",
-      icon: <HomeIcon className="w-5 h-5 mr-2" />,
-      active: location.pathname === "/dashboard/rooms",
-    },
-    {
-      href: "/dashboard/messages",
-      label: "Mensagens",
-      icon: <MessageSquare className="w-5 h-5 mr-2" />,
-      active: location.pathname === "/dashboard/messages",
-    },
-    {
-      href: "/dashboard/reviews",
-      label: "Avaliações",
-      icon: <Star className="w-5 h-5 mr-2" />,
-      active: location.pathname === "/dashboard/reviews",
-    },
-    {
-      href: "/dashboard/settings",
-      label: "Configurações",
-      icon: <Settings className="w-5 h-5 mr-2" />,
-      active: location.pathname === "/dashboard/settings",
-    },
-  ];
-
-  const advertiserLinks = [
-    {
-      href: "/dashboard/advertiser-profile",
-      label: "Meu Perfil",
-      icon: <UserIcon className="w-5 h-5 mr-2" />,
-      active: location.pathname === "/dashboard/advertiser-profile",
-    },
-    {
-      href: "/dashboard/rooms",
-      label: "Meus Imóveis",
-      icon: <HomeIcon className="w-5 h-5 mr-2" />,
-      active: location.pathname === "/dashboard/rooms",
-    },
-    {
-      href: "/dashboard/messages",
-      label: "Mensagens",
-      icon: <MessageSquare className="w-5 h-5 mr-2" />,
-      active: location.pathname === "/dashboard/messages",
-    },
-    {
-      href: "/dashboard/reviews",
-      label: "Avaliações",
-      icon: <Star className="w-5 h-5 mr-2" />,
-      active: location.pathname === "/dashboard/reviews",
-    },
-    {
-      href: "/dashboard/settings",
-      label: "Configurações",
-      icon: <Settings className="w-5 h-5 mr-2" />,
-      active: location.pathname === "/dashboard/settings",
-    },
-  ];
-
-  const links = isAdvertiser ? advertiserLinks : clientLinks;
+  const NavContent = () => (
+    <div className="space-y-4 py-4">
+      <div className="px-3 py-2">
+        <h2 className="mb-2 px-4 text-lg font-semibold">Menu</h2>
+        <div className="space-y-1">
+          {navigation.map((item) => {
+            const isActive = location.pathname === item.href;
+            return (
+              <Link key={item.name} to={item.href}>
+                <Button
+                  variant={isActive ? "secondary" : "ghost"}
+                  className="w-full justify-start"
+                >
+                  <item.icon className="mr-2 h-4 w-4" />
+                  {item.name}
+                </Button>
+              </Link>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
-      {/* Mobile Sidebar */}
-      <Sheet open={open} onOpenChange={setOpen}>
-        <SheetTrigger asChild className="md:hidden">
-          <Button
-            variant="outline"
-            size="icon"
-            className="fixed top-4 left-4 z-40"
-          >
-            <Menu className="h-5 w-5" />
-          </Button>
-        </SheetTrigger>
-        <SheetContent side="left" className="w-64 p-0">
-          <SheetHeader className="p-4 border-b">
-            <SheetTitle>Menu</SheetTitle>
-          </SheetHeader>
-          <div className="p-4">
-            <div className="flex items-center mb-6">
-              <Avatar className="h-10 w-10">
-                <AvatarImage 
-                  src={advertiser?.avatar_url || user?.avatar} 
-                  alt={advertiser?.name || user?.name} 
-                />
-                <AvatarFallback>
-                  {(advertiser?.name || user?.name || "U").charAt(0)}
-                </AvatarFallback>
-              </Avatar>
-              <div className="ml-3">
-                <p className="font-medium">{advertiser?.name || user?.name}</p>
-                <p className="text-sm text-muted-foreground">
-                  {advertiser?.email || user?.email}
-                </p>
-              </div>
-            </div>
-
-            <nav className="space-y-1">
-              {links.map((link) => (
-                <Link
-                  key={link.href}
-                  to={link.href}
-                  className={`flex items-center px-3 py-2 rounded-md text-sm ${
-                    link.active
-                      ? "bg-gray-100 text-gray-900"
-                      : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-                  }`}
-                  onClick={() => setOpen(false)}
-                >
-                  {link.icon}
-                  {link.label}
-                </Link>
-              ))}
-              <Button
-                variant="ghost"
-                className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50"
-                onClick={handleLogout}
-              >
-                <LogOut className="w-5 h-5 mr-2" />
-                Sair
-              </Button>
-            </nav>
-          </div>
-        </SheetContent>
-      </Sheet>
-
-      {/* Desktop Sidebar */}
-      <div className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0">
-        <div className="flex flex-col flex-1 bg-white border-r">
-          <div className="flex flex-col flex-1 pt-5 pb-4 overflow-y-auto">
-            <div className="flex items-center px-4 mb-6">
-              <Link to="/" className="flex items-center">
-                <Building2 className="w-8 h-8 text-slate-700" />
-                <span className="ml-2 text-xl font-bold">More</span>
-              </Link>
-            </div>
-            <div className="px-4 mb-6">
-              <div className="flex items-center">
-                <Avatar className="h-10 w-10">
-                  <AvatarImage 
-                    src={advertiser?.avatar_url || user?.avatar} 
-                    alt={advertiser?.name || user?.name} 
-                  />
-                  <AvatarFallback>
-                    {(advertiser?.name || user?.name || "U").charAt(0)}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="ml-3">
-                  <p className="font-medium">{advertiser?.name || user?.name}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {advertiser?.email || user?.email}
-                  </p>
-                </div>
-              </div>
-            </div>
-            <nav className="flex-1 px-2 space-y-1">
-              {links.map((link) => (
-                <Link
-                  key={link.href}
-                  to={link.href}
-                  className={`flex items-center px-3 py-2 rounded-md text-sm ${
-                    link.active
-                      ? "bg-gray-100 text-gray-900"
-                      : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-                  }`}
-                >
-                  {link.icon}
-                  {link.label}
-                </Link>
-              ))}
-            </nav>
-          </div>
-          <div className="p-4 border-t">
-            <Button
-              variant="ghost"
-              className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50"
-              onClick={handleLogout}
-            >
-              <LogOut className="w-5 h-5 mr-2" />
-              Sair
+    <div className="min-h-screen">
+      {/* Mobile navigation */}
+      <div className="lg:hidden sticky top-0 z-50 flex items-center justify-between px-4 py-4 border-b bg-white">
+        <Sheet>
+          <SheetTrigger asChild>
+            <Button variant="ghost" size="icon">
+              <Menu className="h-5 w-5" />
             </Button>
-          </div>
+          </SheetTrigger>
+          <SheetContent side="left" className="w-64">
+            <NavContent />
+          </SheetContent>
+        </Sheet>
+
+        <div className="flex items-center space-x-2">
+          <UserMenu 
+            key={`mobile-avatar-${avatarKey}`} 
+            onLogout={handleLogout} 
+            avatar={isAdvertiser ? advertiser?.avatar_url : user?.avatar_url} 
+            name={isAdvertiser ? advertiser?.name : user?.name} 
+          />
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="md:pl-64 flex flex-col flex-1">
-        <main className="flex-1 p-4 md:p-8">
-          <div className="mx-auto max-w-7xl">{children}</div>
-        </main>
+      <div className="flex">
+        {/* Desktop navigation */}
+        <div className="hidden lg:flex lg:w-64 lg:flex-col lg:fixed lg:inset-y-0">
+          <div className="flex flex-col flex-1 min-h-screen border-r bg-white">
+            <div className="flex-1">
+              <div className="flex items-center justify-center h-16 px-4 border-b">
+                <h1 className="text-xl font-semibold">More</h1>
+              </div>
+              <NavContent />
+            </div>
+            <div className="p-4 border-t">
+              <UserMenu 
+                key={`desktop-avatar-${avatarKey}`}
+                onLogout={handleLogout} 
+                avatar={isAdvertiser ? advertiser?.avatar_url : user?.avatar_url} 
+                name={isAdvertiser ? advertiser?.name : user?.name} 
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Main content */}
+        <div className="flex-1 lg:pl-64">
+          <div className="py-6 px-4 lg:px-8">{children}</div>
+        </div>
       </div>
     </div>
+  );
+};
+
+interface UserMenuProps {
+  onLogout: () => void;
+  avatar?: string;
+  name?: string;
+}
+
+const UserMenu = ({ onLogout, avatar, name }: UserMenuProps) => {
+  console.log("UserMenu rendering with avatar:", avatar);
+  
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+          <Avatar className="h-10 w-10">
+            <AvatarImage 
+              src={avatar || "/placeholder.svg"} 
+              alt={`${name || 'User'} avatar`} 
+              onError={(e) => {
+                console.error("Error loading avatar in menu:", avatar);
+                (e.target as HTMLImageElement).src = "/placeholder.svg";
+              }}
+            />
+            <AvatarFallback>{name ? name[0].toUpperCase() : 'U'}</AvatarFallback>
+          </Avatar>
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem className="cursor-pointer" onClick={onLogout}>
+          <LogOut className="mr-2 h-4 w-4" />
+          <span>Sair</span>
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 };
 
