@@ -39,6 +39,33 @@ export type Database = {
         }
         Relationships: []
       }
+      client: {
+        Row: {
+          "Criado em": string | null
+          Email: string | null
+          id: string
+          Nome: string
+          telefone: string | null
+          Url_avatar_client: string | null
+        }
+        Insert: {
+          "Criado em"?: string | null
+          Email?: string | null
+          id?: string
+          Nome: string
+          telefone?: string | null
+          Url_avatar_client?: string | null
+        }
+        Update: {
+          "Criado em"?: string | null
+          Email?: string | null
+          id?: string
+          Nome?: string
+          telefone?: string | null
+          Url_avatar_client?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

@@ -8,6 +8,7 @@ import { Mail, Lock, User, Eye, EyeOff, ChevronLeft } from "lucide-react";
 import { toast } from "sonner";
 import FadeIn from "@/components/animations/FadeIn";
 import { Checkbox } from "@/components/ui/checkbox";
+import { supabase } from "@/integrations/supabase/client";
 
 const Register = () => {
   const [name, setName] = useState("");
@@ -39,17 +40,52 @@ const Register = () => {
     
     setIsLoading(true);
 
-    // Simulate registration process
     try {
-      // In a real app, this would be your auth call
-      setTimeout(() => {
-        toast.success("Cadastro realizado com sucesso!");
-        navigate("/login");
-        setIsLoading(false);
-      }, 1500);
-    } catch (error) {
+      // Register the user with Supabase Auth
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            name: name
+          }
+        }
+      });
+
+      if (error) throw error;
+      
+      if (data.user) {
+        // Create client record in the database
+        const { error: clientError } = await supabase
+          .from('client')
+          .insert([
+            {
+              id: data.user.id,
+              Nome: name,
+              Email: email,
+              Url_avatar_client: "/placeholder.svg",
+              "Criado em": new Date().toISOString()
+            }
+          ]);
+          
+        if (clientError) {
+          console.error("Error creating client record:", clientError);
+          toast.error("Falha ao criar perfil de cliente. Tente novamente.");
+        } else {
+          toast.success("Cadastro realizado com sucesso! Verifique seu email para confirmar sua conta.");
+          navigate("/login");
+        }
+      }
+    } catch (error: any) {
+      console.error("Registration error:", error.message);
+      
+      if (error.message.includes("already registered")) {
+        toast.error("Este email já está registrado. Tente fazer login.");
+      } else {
+        toast.error("Falha ao criar conta. " + error.message);
+      }
+    } finally {
       setIsLoading(false);
-      toast.error("Falha ao criar conta. Tente novamente.");
     }
   };
 
