@@ -3,6 +3,8 @@ import React, { useEffect } from "react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import AdvertiserProfile from "@/components/dashboard/AdvertiserProfile";
 import { useAdvertiser } from "@/contexts/AdvertiserContext";
+import UserSettings from "@/components/dashboard/UserSettings";
+import { useUser } from "@/contexts/UserContext";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,7 +12,8 @@ import { useNavigate } from "react-router-dom";
 import { Separator } from "@/components/ui/separator";
 
 const Settings = () => {
-  const { advertiser, isLoading } = useAdvertiser();
+  const { advertiser, isLoading: advertiserLoading } = useAdvertiser();
+  const { user, isLoading: userLoading } = useUser();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -58,7 +61,8 @@ const Settings = () => {
     }
   };
 
-  if (isLoading) {
+  // Show loading state while checking authentication
+  if (advertiser && advertiserLoading) {
     return (
       <DashboardLayout>
         <div className="text-center py-20">
@@ -69,13 +73,25 @@ const Settings = () => {
     );
   }
 
-  if (!advertiser) {
+  if (user && userLoading) {
+    return (
+      <DashboardLayout>
+        <div className="text-center py-20">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto"></div>
+          <p className="mt-4 text-lg">Carregando informações do perfil...</p>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  // Handle not authenticated state
+  if (!advertiser && !user) {
     return (
       <DashboardLayout>
         <div className="text-center py-20">
           <p className="text-lg text-red-500">Usuário não autenticado</p>
           <Button 
-            onClick={() => navigate("/advertiser/login")} 
+            onClick={() => navigate("/login")} 
             className="mt-4"
           >
             Ir para login
@@ -93,7 +109,11 @@ const Settings = () => {
           <p className="text-muted-foreground">Gerencie suas informações de perfil</p>
         </div>
 
-        <AdvertiserProfile initialData={advertiser} />
+        {advertiser ? (
+          <AdvertiserProfile initialData={advertiser} />
+        ) : (
+          <UserSettings initialData={user || undefined} />
+        )}
         
         <Separator />
         

@@ -1,11 +1,14 @@
+
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 
 interface User {
   id?: string;
   name: string;
   email: string;
   avatar?: string;
+  phone?: string;
 }
 
 interface UserContextType {
@@ -15,6 +18,7 @@ interface UserContextType {
   loginWithGoogle: (credential: any, rememberMe?: boolean) => Promise<void>;
   logout: () => void;
   isLoading: boolean;
+  updateUserProfile: (updates: Partial<User>) => Promise<void>;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -97,8 +101,46 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const updateUserProfile = async (updates: Partial<User>) => {
+    if (!user) return;
+
+    try {
+      // Update in database (this would be replaced with actual API call)
+      if (user.email) {
+        const { error } = await supabase
+          .from("client")
+          .update({
+            Nome: updates.name || user.name,
+            telefone: updates.phone || user.phone,
+            // Only update avatar if provided
+            ...(updates.avatar && { Url_avatar_client: updates.avatar })
+          })
+          .eq("Email", user.email);
+          
+        if (error) throw error;
+      }
+      
+      // Update local state
+      const updatedUser = { ...user, ...updates };
+      setUser(updatedUser);
+      
+      // Update storage
+      const storage = localStorage.getItem("user") 
+        ? localStorage 
+        : sessionStorage;
+      
+      storage.setItem("user", JSON.stringify(updatedUser));
+      
+      return;
+    } catch (error) {
+      console.error("Error updating user profile:", error);
+      throw new Error("Failed to update profile");
+    }
+  };
+
   const logout = () => {
     localStorage.removeItem("user");
+    sessionStorage.removeItem("user");
     setUser(null);
     navigate("/");
   };
@@ -112,6 +154,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         loginWithGoogle,
         logout,
         isLoading,
+        updateUserProfile,
       }}
     >
       {children}
