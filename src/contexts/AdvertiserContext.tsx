@@ -3,6 +3,7 @@ import React, { createContext, useContext, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { Session, User } from "@supabase/supabase-js";
 
 interface Advertiser {
   id?: string;
@@ -18,6 +19,8 @@ interface AdvertiserContextType {
   updateAdvertiserProfile: (data: Partial<Advertiser>) => Promise<void>;
   logout: () => Promise<void>;
   isLoading: boolean;
+  user: User | null;
+  session: Session | null;
 }
 
 const AdvertiserContext = createContext<AdvertiserContextType | undefined>(undefined);
@@ -25,62 +28,38 @@ const AdvertiserContext = createContext<AdvertiserContextType | undefined>(undef
 export function AdvertiserProvider({ children }: { children: React.ReactNode }) {
   const [advertiser, setAdvertiser] = useState<Advertiser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Check for current Supabase session
-    const fetchAdvertiser = async () => {
-      try {
-        console.log("Fetching advertiser profile...");
-        const { data } = await supabase.auth.getSession();
-        
-        if (data.session) {
-          console.log("Session found, fetching advertiser data...");
-          // Get advertiser profile from database
-          const { data: advertiserData, error } = await supabase
-            .from('advertisers')
-            .select('*')
-            .eq('id', data.session.user.id)
-            .single();
-          
-          if (error) {
-            console.error("Error fetching advertiser profile:", error);
-            setIsLoading(false);
-            return;
-          }
-          
-          console.log("Advertiser data fetched:", advertiserData);
-          setAdvertiser(advertiserData);
-        } else {
-          console.log("No session found");
-        }
-      } catch (error) {
-        console.error("Error checking auth session:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchAdvertiser();
-
-    // Subscribe to auth changes
-    const { data: authListener } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+    // Set up auth state listener first
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, currentSession) => {
         console.log("Auth state changed:", event);
-        if (event === 'SIGNED_IN' && session) {
-          console.log("User signed in, fetching profile...");
-          // Get advertiser profile when signed in
-          const { data, error } = await supabase
-            .from('advertisers')
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
-          
-          if (!error && data) {
-            console.log("Profile data:", data);
-            setAdvertiser(data);
-          } else if (error) {
-            console.error("Error fetching profile after sign in:", error);
+        setSession(currentSession);
+        setUser(currentSession?.user ?? null);
+        
+        if (event === 'SIGNED_IN' && currentSession) {
+          try {
+            console.log("User signed in, fetching profile...");
+            const { data, error } = await supabase
+              .from('advertisers')
+              .select('*')
+              .eq('id', currentSession.user.id)
+              .single();
+            
+            if (error) {
+              console.error("Error fetching advertiser profile:", error);
+              return;
+            }
+            
+            if (data) {
+              console.log("Profile data:", data);
+              setAdvertiser(data);
+            }
+          } catch (profileError) {
+            console.error("Error in profile fetch:", profileError);
           }
         } else if (event === 'SIGNED_OUT') {
           console.log("User signed out");
@@ -89,12 +68,43 @@ export function AdvertiserProvider({ children }: { children: React.ReactNode }) 
       }
     );
 
+    // Then check for existing session
+    supabase.auth.getSession().then(async ({ data: { session: currentSession } }) => {
+      setSession(currentSession);
+      setUser(currentSession?.user ?? null);
+      
+      if (currentSession?.user) {
+        try {
+          const { data, error } = await supabase
+            .from('advertisers')
+            .select('*')
+            .eq('id', currentSession.user.id)
+            .single();
+          
+          if (error) {
+            console.error("Error fetching advertiser profile:", error);
+            setIsLoading(false);
+            return;
+          }
+          
+          if (data) {
+            console.log("Initial session profile data:", data);
+            setAdvertiser(data);
+          }
+        } catch (error) {
+          console.error("Error in initial profile fetch:", error);
+        }
+      }
+      
+      setIsLoading(false);
+    });
+
     return () => {
-      authListener.subscription.unsubscribe();
+      subscription.unsubscribe();
     };
   }, []);
 
-  // Update advertiser profile data and persist changes
+  // Update advertiser profile data
   const updateAdvertiserProfile = async (data: Partial<Advertiser>) => {
     if (!advertiser || !advertiser.id) {
       console.error("Cannot update profile: No advertiser data or ID");
@@ -121,6 +131,7 @@ export function AdvertiserProvider({ children }: { children: React.ReactNode }) 
         return updated;
       });
       
+      toast.success("Perfil atualizado com sucesso!");
     } catch (error) {
       console.error("Error updating profile:", error);
       toast.error("Erro ao atualizar perfil. Tente novamente.");
@@ -132,6 +143,8 @@ export function AdvertiserProvider({ children }: { children: React.ReactNode }) 
     try {
       await supabase.auth.signOut();
       setAdvertiser(null);
+      setUser(null);
+      setSession(null);
       navigate("/");
       toast.success("Logout realizado com sucesso!");
     } catch (error) {
@@ -148,6 +161,8 @@ export function AdvertiserProvider({ children }: { children: React.ReactNode }) 
         updateAdvertiserProfile,
         logout,
         isLoading,
+        user,
+        session
       }}
     >
       {children}

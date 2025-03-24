@@ -21,14 +21,14 @@ const AdvertiserRegister = () => {
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-  const { advertiser } = useAdvertiser();
+  const { user } = useAdvertiser();
   
   // Redirect if already logged in
   useEffect(() => {
-    if (advertiser) {
+    if (user) {
       navigate("/dashboard");
     }
-  }, [advertiser, navigate]);
+  }, [user, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,6 +51,8 @@ const AdvertiserRegister = () => {
     setIsLoading(true);
 
     try {
+      console.log("Registering new user:", email);
+      
       // Register the user with Supabase
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -64,8 +66,11 @@ const AdvertiserRegister = () => {
       });
       
       if (error) {
+        console.error("Registration error:", error);
         throw error;
       }
+      
+      console.log("Registration successful:", data);
       
       toast.success("Cadastro realizado com sucesso! Verifique seu email para confirmar a conta.");
       navigate("/advertiser/login");

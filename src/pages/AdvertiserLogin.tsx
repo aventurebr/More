@@ -20,14 +20,14 @@ const AdvertiserLogin = () => {
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-  const { advertiser } = useAdvertiser();
+  const { user } = useAdvertiser();
   
   // Redirect if already logged in
   useEffect(() => {
-    if (advertiser) {
+    if (user) {
       navigate("/dashboard");
     }
-  }, [advertiser, navigate]);
+  }, [user, navigate]);
   
   const googleLogin = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
@@ -61,6 +61,7 @@ const AdvertiserLogin = () => {
     }
     
     setIsLoading(true);
+    console.log("Attempting login with:", email);
 
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -69,9 +70,11 @@ const AdvertiserLogin = () => {
       });
       
       if (error) {
+        console.error("Login error:", error);
         throw error;
       }
       
+      console.log("Login successful:", data);
       toast.success("Login realizado com sucesso!");
       navigate("/dashboard");
     } catch (error: any) {
