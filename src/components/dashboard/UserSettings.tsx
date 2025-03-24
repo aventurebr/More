@@ -14,6 +14,7 @@ import { KeyRound, User, AlertTriangle } from "lucide-react";
 import UserProfile from "./UserProfile";
 import { toast } from "sonner";
 import { useUser } from "@/contexts/UserContext";
+import { supabase } from "@/integrations/supabase/client";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -54,9 +55,27 @@ const UserSettings = ({ initialData }: UserSettingsProps) => {
     setIsUpdatingName(true);
     
     try {
-      // Since we're using mock data for regular users, we'll just update the user state
+      // Update in Supabase client table
+      const { error } = await supabase
+        .from("client")
+        .update({ Nome: newName })
+        .eq("Email", user?.email);
+        
+      if (error) throw error;
+      
+      // Update user state
       if (user) {
-        await updateUserName(newName);
+        const updatedUser = { ...user, name: newName };
+        setUser(updatedUser);
+        
+        // Update storage
+        if (typeof window !== "undefined") {
+          const storage = localStorage.getItem("user") 
+            ? localStorage 
+            : sessionStorage;
+          
+          storage.setItem("user", JSON.stringify(updatedUser));
+        }
       }
       
       toast.success("Nome atualizado com sucesso!");
@@ -65,15 +84,6 @@ const UserSettings = ({ initialData }: UserSettingsProps) => {
       toast.error("Erro ao atualizar o nome. Tente novamente.");
     } finally {
       setIsUpdatingName(false);
-    }
-  };
-
-  const updateUserName = async (name: string) => {
-    try {
-      // Update user state through context
-      await useUser().updateUserProfile({ name });
-    } catch (error) {
-      throw error;
     }
   };
 
@@ -98,7 +108,12 @@ const UserSettings = ({ initialData }: UserSettingsProps) => {
     setIsUpdatingPassword(true);
     
     try {
-      // Since we're using mock auth, we'll just show a success message
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword
+      });
+      
+      if (error) throw error;
+      
       toast.success("Senha atualizada com sucesso!");
       setCurrentPassword("");
       setNewPassword("");
