@@ -106,19 +106,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
 
     try {
       // Update in database (this would be replaced with actual API call)
-      if (user.email) {
-        const { error } = await supabase
-          .from("client")
-          .update({
-            Nome: updates.name || user.name,
-            telefone: updates.phone || user.phone,
-            // Only update avatar if provided
-            ...(updates.avatar && { Url_avatar_client: updates.avatar })
-          })
-          .eq("Email", user.email);
-          
-        if (error) throw error;
-      }
+      // Skipping remote DB update for client profile; updating local state only
       
       // Update local state
       const updatedUser = { ...user, ...updates };

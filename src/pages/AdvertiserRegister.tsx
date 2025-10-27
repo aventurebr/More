@@ -58,6 +58,7 @@ const AdvertiserRegister = () => {
         email,
         password,
         options: {
+          emailRedirectTo: window.location.origin + '/dashboard',
           data: {
             name,
             phone

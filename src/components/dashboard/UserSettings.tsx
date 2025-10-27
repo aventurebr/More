@@ -36,7 +36,7 @@ interface UserSettingsProps {
 }
 
 const UserSettings = ({ initialData }: UserSettingsProps) => {
-  const { user, setUser, logout } = useUser();
+  const { user, updateUserProfile, logout } = useUser();
   const [isUpdatingName, setIsUpdatingName] = useState(false);
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
   const [newName, setNewName] = useState(initialData?.name || "");
@@ -55,29 +55,7 @@ const UserSettings = ({ initialData }: UserSettingsProps) => {
     setIsUpdatingName(true);
     
     try {
-      // Update in Supabase client table
-      const { error } = await supabase
-        .from("client")
-        .update({ Nome: newName })
-        .eq("Email", user?.email);
-        
-      if (error) throw error;
-      
-      // Update user state
-      if (user) {
-        const updatedUser = { ...user, name: newName };
-        setUser(updatedUser);
-        
-        // Update storage
-        if (typeof window !== "undefined") {
-          const storage = localStorage.getItem("user") 
-            ? localStorage 
-            : sessionStorage;
-          
-          storage.setItem("user", JSON.stringify(updatedUser));
-        }
-      }
-      
+      await updateUserProfile({ name: newName });
       toast.success("Nome atualizado com sucesso!");
     } catch (error) {
       console.error("Error updating name:", error);

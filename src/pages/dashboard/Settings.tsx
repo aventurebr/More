@@ -43,7 +43,7 @@ const Settings = () => {
       console.log("Auth session:", data.session);
       
       // Refresh profile data from database
-      const { data: advertiserData, error: advertiserError } = await supabase
+      const { data: advertiserData, error: advertiserError } = await (supabase as any)
         .from('advertisers')
         .select('*')
         .eq('id', data.session.user.id)

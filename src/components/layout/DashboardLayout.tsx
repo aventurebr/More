@@ -60,8 +60,8 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   // Force avatar re-render when data changes
   useEffect(() => {
     setAvatarKey(Date.now());
-    console.log("Avatar should update with URL:", isAdvertiser ? advertiser?.avatar_url : user?.avatar_url);
-  }, [advertiser?.avatar_url, user?.avatar_url, isAdvertiser]);
+    console.log("Avatar should update with URL:", isAdvertiser ? advertiser?.avatar_url : user?.avatar);
+  }, [advertiser?.avatar_url, user?.avatar, isAdvertiser]);
 
   const handleLogout = () => {
     if (isAdvertiser) {
@@ -114,7 +114,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           <UserMenu 
             key={`mobile-avatar-${avatarKey}`} 
             onLogout={handleLogout} 
-            avatar={isAdvertiser ? advertiser?.avatar_url : user?.avatar_url} 
+            avatar={isAdvertiser ? advertiser?.avatar_url : user?.avatar} 
             name={isAdvertiser ? advertiser?.name : user?.name} 
           />
         </div>
@@ -134,7 +134,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
               <UserMenu 
                 key={`desktop-avatar-${avatarKey}`}
                 onLogout={handleLogout} 
-                avatar={isAdvertiser ? advertiser?.avatar_url : user?.avatar_url} 
+                avatar={isAdvertiser ? advertiser?.avatar_url : user?.avatar} 
                 name={isAdvertiser ? advertiser?.name : user?.name} 
               />
             </div>

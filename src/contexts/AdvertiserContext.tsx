@@ -43,7 +43,7 @@ export function AdvertiserProvider({ children }: { children: React.ReactNode }) 
         if (event === 'SIGNED_IN' && currentSession) {
           try {
             console.log("User signed in, fetching profile...");
-            const { data, error } = await supabase
+            const { data, error } = await (supabase as any)
               .from('advertisers')
               .select('*')
               .eq('id', currentSession.user.id)
@@ -75,7 +75,7 @@ export function AdvertiserProvider({ children }: { children: React.ReactNode }) 
       
       if (currentSession?.user) {
         try {
-          const { data, error } = await supabase
+          const { data, error } = await (supabase as any)
             .from('advertisers')
             .select('*')
             .eq('id', currentSession.user.id)
@@ -113,7 +113,7 @@ export function AdvertiserProvider({ children }: { children: React.ReactNode }) 
 
     try {
       console.log("Updating advertiser profile with:", data);
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('advertisers')
         .update(data)
         .eq('id', advertiser.id);
