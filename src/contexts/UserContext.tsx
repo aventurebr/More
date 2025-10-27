@@ -102,11 +102,21 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   };
 
   const updateUserProfile = async (updates: Partial<User>) => {
-    if (!user) return;
+    if (!user || !user.id) return;
 
     try {
-      // Update in database (this would be replaced with actual API call)
-      // Skipping remote DB update for client profile; updating local state only
+      // Update in Supabase profiles table
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          name: updates.name,
+          email: updates.email,
+          phone: updates.phone,
+          avatar: updates.avatar,
+        })
+        .eq('id', user.id);
+      
+      if (error) throw error;
       
       // Update local state
       const updatedUser = { ...user, ...updates };
